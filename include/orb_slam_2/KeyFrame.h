@@ -21,13 +21,13 @@
 #ifndef KEYFRAME_H
 #define KEYFRAME_H
 
-#include "MapPoint.h"
-#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
-#include "ORBVocabulary.h"
-#include "ORBextractor.h"
-#include "Frame.h"
-#include "KeyFrameDatabase.h"
+#include "orb_slam_2/MapPoint.h"
+#include "DBoW2/BowVector.h"
+#include "DBoW2/FeatureVector.h"
+#include "orb_slam_2/ORBVocabulary.h"
+#include "orb_slam_2/ORBextractor.h"
+#include "orb_slam_2/Frame.h"
+#include "orb_slam_2/KeyFrameDatabase.h"
 
 #include <mutex>
 

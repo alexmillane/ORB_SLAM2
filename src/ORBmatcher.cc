@@ -18,14 +18,14 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ORBmatcher.h"
+#include "orb_slam_2/ORBmatcher.h"
 
 #include<limits.h>
 
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
+#include "DBoW2/FeatureVector.h"
 
 #include<stdint-gcc.h>
 

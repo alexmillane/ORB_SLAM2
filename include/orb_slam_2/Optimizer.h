@@ -21,13 +21,13 @@
 #ifndef OPTIMIZER_H
 #define OPTIMIZER_H
 
-#include "Map.h"
-#include "MapPoint.h"
-#include "KeyFrame.h"
-#include "LoopClosing.h"
-#include "Frame.h"
+#include "orb_slam_2/Map.h"
+#include "orb_slam_2/MapPoint.h"
+#include "orb_slam_2/KeyFrame.h"
+#include "orb_slam_2/LoopClosing.h"
+#include "orb_slam_2/Frame.h"
 
-#include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
+#include "g2o/types/types_seven_dof_expmap.h"
 
 namespace ORB_SLAM2
 {

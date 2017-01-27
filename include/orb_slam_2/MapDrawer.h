@@ -21,9 +21,9 @@
 #ifndef MAPDRAWER_H
 #define MAPDRAWER_H
 
-#include"Map.h"
-#include"MapPoint.h"
-#include"KeyFrame.h"
+#include"orb_slam_2/Map.h"
+#include"orb_slam_2/MapPoint.h"
+#include"orb_slam_2/KeyFrame.h"
 #include<pangolin/pangolin.h>
 
 #include<mutex>

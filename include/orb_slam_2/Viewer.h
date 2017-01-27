@@ -22,10 +22,10 @@
 #ifndef VIEWER_H
 #define VIEWER_H
 
-#include "FrameDrawer.h"
-#include "MapDrawer.h"
-#include "Tracking.h"
-#include "System.h"
+#include "orb_slam_2/FrameDrawer.h"
+#include "orb_slam_2/MapDrawer.h"
+#include "orb_slam_2/Tracking.h"
+#include "orb_slam_2/System.h"
 
 #include <mutex>
 

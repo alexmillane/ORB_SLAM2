@@ -18,10 +18,10 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "LocalMapping.h"
-#include "LoopClosing.h"
-#include "ORBmatcher.h"
-#include "Optimizer.h"
+#include "orb_slam_2/LocalMapping.h"
+#include "orb_slam_2/LoopClosing.h"
+#include "orb_slam_2/ORBmatcher.h"
+#include "orb_slam_2/Optimizer.h"
 
 #include<mutex>
 

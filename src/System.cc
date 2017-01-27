@@ -18,13 +18,13 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-
-#include "System.h"
-#include "Converter.h"
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
+
+#include "orb_slam_2/System.h"
+#include "orb_slam_2/Converter.h"
+#include "orb_slam_2/DenseMappingInterface.h"
 
 namespace ORB_SLAM2
 {
@@ -77,6 +77,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Create the Map
     mpMap = new Map();
 
+    // Creating the dense mapping interface
+    mpDenseMappingInterface = new DenseMappingInterface(mpMap);
+
     //Create Drawers. These are used by the Viewer
     mpFrameDrawer = new FrameDrawer(mpMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
@@ -91,7 +94,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
 
     //Initialize the Loop Closing thread and launch
-    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
+    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mpDenseMappingInterface, mSensor!=MONOCULAR);
     mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
     //Initialize the Viewer thread and launch
@@ -487,6 +490,16 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 {
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
+}
+
+bool System::isUpdatedTrajectoryAvailable()
+{
+    return mpDenseMappingInterface->isUpdatedTrajectoryAvailable();
+}
+
+std::vector<Eigen::Affine3d> System::GetUpdatedTrajectory()
+{
+    return mpDenseMappingInterface->getUpdatedTrajectory();
 }
 
 } //namespace ORB_SLAM

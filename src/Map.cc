@@ -18,7 +18,7 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "Map.h"
+#include "orb_slam_2/Map.h"
 
 #include<mutex>
 
