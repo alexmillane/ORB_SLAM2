@@ -5,6 +5,7 @@
 #include <mutex>
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #include "orb_slam_2/Map.h"
 
@@ -30,9 +31,14 @@ class DenseMappingInterface {
 
   bool isUpdatedTrajectoryAvailable();
 
-  std::vector<Eigen::Affine3d> getUpdatedTrajectory();
+  std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> >
+  getUpdatedTrajectory();
 
  protected:
+
+  // Compares two 
+  static bool compareKeyframes(KeyFrame* keyframe1, KeyFrame* keyframe2);
+
   // Map
   Map* mpMap;
 
@@ -40,11 +46,14 @@ class DenseMappingInterface {
   bool mbUpdatedTrajectoryAvailable;
 
   // The trajectory stored by the interface
-  std::vector<Eigen::Affine3d> mvPoseTrajectory; 
+  // NOTE(alexmillane): This specialized trajectory type is required because of
+  // considerations to using standard containers with some eigen types.
+  // std::vector<Eigen::Affine3d> mvPoseTrajectory;
+  std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> >
+      mvPoseTrajectory;
 
   // A mutex which locks the trajectory for read/write
   std::mutex mMutexTrajectory;
-
 };
 
 }  // namespace ORB_SLAM
