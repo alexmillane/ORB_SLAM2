@@ -130,8 +130,7 @@ class System {
 
   // Functions related to trajectory publishing
   bool isUpdatedTrajectoryAvailable();
-  std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> >
-  GetUpdatedTrajectory();
+  std::vector<PoseStamped> GetUpdatedTrajectory();
 
  private:
   // Input sensor

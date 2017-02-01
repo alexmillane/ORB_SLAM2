@@ -9,17 +9,11 @@
 
 #include "orb_slam_2/Map.h"
 
-/*#include "KeyFrame.h"
-#include "KeyFrameDatabase.h"
-#include "LoopClosing.h"
-#include "Tracking.h"
-
-#include <mutex>*/
-
 namespace ORB_SLAM2 {
 
-// class Tracking;
-// class LoopClosing;
+// A type of a stamped pose
+typedef std::pair<cv::Mat, double> PoseStamped;
+
 class Map;
 
 class DenseMappingInterface {
@@ -29,14 +23,13 @@ class DenseMappingInterface {
   // Tells the interface that a global bundle adjustment has occurred.
   void notifyFinishedGBA();
 
+  // Functions for getting loop closed trajectories.
   bool isUpdatedTrajectoryAvailable();
-
-  std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> >
-  getUpdatedTrajectory();
+  std::vector<PoseStamped> getUpdatedTrajectory();
 
  protected:
 
-  // Compares two 
+  // Compares two keyframes, returning true if KF1 ID is > KF2 ID. For sorting.
   static bool compareKeyframes(KeyFrame* keyframe1, KeyFrame* keyframe2);
 
   // Map
@@ -45,12 +38,8 @@ class DenseMappingInterface {
   // Flag indicating if a new (unfetched) trajectory is available
   bool mbUpdatedTrajectoryAvailable;
 
-  // The trajectory stored by the interface
-  // NOTE(alexmillane): This specialized trajectory type is required because of
-  // considerations to using standard containers with some eigen types.
-  // std::vector<Eigen::Affine3d> mvPoseTrajectory;
-  std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> >
-      mvPoseTrajectory;
+  // The latest loop closed trajectory stored here
+  std::vector<PoseStamped> mvPoseTrajectory;
 
   // A mutex which locks the trajectory for read/write
   std::mutex mMutexTrajectory;

@@ -15,14 +15,15 @@ void DenseMappingInterface::notifyFinishedGBA() {
   // DEBUG
   std::cout << "Bundle Adjustment finsihed. Storing pose trajectory."
             << std::endl;
-  // Locking the trajectory to overwrite
+  // Locking the stored trajectory to overwrite
   unique_lock<mutex> lock(mMutexTrajectory);
-  // Looping over the keyframes and storing poses
+  // Getting the keyframes in the map
   vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
 
   // Sort the keyframes according to their ID
   std::sort(vpKFs.begin(), vpKFs.end(), compareKeyframes);
 
+  // Storing the keyframe poses and timestamps
   mvPoseTrajectory.clear();
   mvPoseTrajectory.reserve(vpKFs.size());
   for (size_t i = 0; i < vpKFs.size(); i++) {
@@ -30,7 +31,9 @@ void DenseMappingInterface::notifyFinishedGBA() {
     KeyFrame* pKF = vpKFs[i];
     // Extracting and storing pose
     cv::Mat Twc = pKF->GetPose();
-    mvPoseTrajectory.push_back(Converter::toAffine3d(Twc));
+    double timestamp = pKF->mTimeStamp;
+    PoseStamped post_stamped(Twc, timestamp);
+    mvPoseTrajectory.push_back(post_stamped);
   }
 
   // Indicating the trajectory is ready for retreival
@@ -41,8 +44,7 @@ bool DenseMappingInterface::isUpdatedTrajectoryAvailable() {
   return mbUpdatedTrajectoryAvailable;
 }
 
-std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> >
-DenseMappingInterface::getUpdatedTrajectory() {
+std::vector<PoseStamped> DenseMappingInterface::getUpdatedTrajectory() {
   // Locking the trajectory to prevent modification on copy
   mbUpdatedTrajectoryAvailable = false;
   unique_lock<mutex> lock(mMutexTrajectory);

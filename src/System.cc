@@ -481,8 +481,7 @@ bool System::isUpdatedTrajectoryAvailable() {
   return mpDenseMappingInterface->isUpdatedTrajectoryAvailable();
 }
 
-std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> >
-System::GetUpdatedTrajectory() {
+std::vector<PoseStamped> System::GetUpdatedTrajectory() {
   return mpDenseMappingInterface->getUpdatedTrajectory();
 }
 
