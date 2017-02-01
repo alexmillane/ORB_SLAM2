@@ -19,19 +19,19 @@
 */
 
 
-#include "Tracking.h"
+#include "orb_slam_2/Tracking.h"
 
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
-#include"ORBmatcher.h"
-#include"FrameDrawer.h"
-#include"Converter.h"
-#include"Map.h"
-#include"Initializer.h"
+#include"orb_slam_2/ORBmatcher.h"
+#include"orb_slam_2/FrameDrawer.h"
+#include"orb_slam_2/Converter.h"
+#include"orb_slam_2/Map.h"
+#include"orb_slam_2/Initializer.h"
 
-#include"Optimizer.h"
-#include"PnPsolver.h"
+#include"orb_slam_2/Optimizer.h"
+#include"orb_slam_2/PnPsolver.h"
 
 #include<iostream>
 

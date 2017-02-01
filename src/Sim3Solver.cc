@@ -19,16 +19,16 @@
 */
 
 
-#include "Sim3Solver.h"
+#include "orb_slam_2/Sim3Solver.h"
 
 #include <vector>
 #include <cmath>
 #include <opencv2/core/core.hpp>
 
-#include "KeyFrame.h"
-#include "ORBmatcher.h"
+#include "orb_slam_2/KeyFrame.h"
+#include "orb_slam_2/ORBmatcher.h"
 
-#include "Thirdparty/DBoW2/DUtils/Random.h"
+#include "DUtils/Random.h"
 
 namespace ORB_SLAM2
 {

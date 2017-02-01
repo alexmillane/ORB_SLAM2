@@ -50,12 +50,12 @@
 
 #include <iostream>
 
-#include "PnPsolver.h"
+#include "orb_slam_2/PnPsolver.h"
 
 #include <vector>
 #include <cmath>
 #include <opencv2/core/core.hpp>
-#include "Thirdparty/DBoW2/DUtils/Random.h"
+#include "DUtils/Random.h"
 #include <algorithm>
 
 using namespace std;

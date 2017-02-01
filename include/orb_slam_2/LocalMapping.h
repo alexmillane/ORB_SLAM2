@@ -21,11 +21,11 @@
 #ifndef LOCALMAPPING_H
 #define LOCALMAPPING_H
 
-#include "KeyFrame.h"
-#include "Map.h"
-#include "LoopClosing.h"
-#include "Tracking.h"
-#include "KeyFrameDatabase.h"
+#include "orb_slam_2/KeyFrame.h"
+#include "orb_slam_2/Map.h"
+#include "orb_slam_2/LoopClosing.h"
+#include "orb_slam_2/Tracking.h"
+#include "orb_slam_2/KeyFrameDatabase.h"
 
 #include <mutex>
 

@@ -21,9 +21,9 @@
 #ifndef MAPPOINT_H
 #define MAPPOINT_H
 
-#include"KeyFrame.h"
-#include"Frame.h"
-#include"Map.h"
+#include"orb_slam_2/KeyFrame.h"
+#include"orb_slam_2/Frame.h"
+#include"orb_slam_2/Map.h"
 
 #include<opencv2/core/core.hpp>
 #include<mutex>

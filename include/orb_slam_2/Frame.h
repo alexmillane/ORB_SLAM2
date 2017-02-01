@@ -23,12 +23,12 @@
 
 #include<vector>
 
-#include "MapPoint.h"
-#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
-#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
-#include "ORBVocabulary.h"
-#include "KeyFrame.h"
-#include "ORBextractor.h"
+#include "orb_slam_2/MapPoint.h"
+#include "DBoW2/BowVector.h"
+#include "DBoW2/FeatureVector.h"
+#include "orb_slam_2/ORBVocabulary.h"
+#include "orb_slam_2/KeyFrame.h"
+#include "orb_slam_2/ORBextractor.h"
 
 #include <opencv2/opencv.hpp>
 

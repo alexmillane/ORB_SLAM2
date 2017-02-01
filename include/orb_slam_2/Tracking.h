@@ -25,18 +25,18 @@
 #include<opencv2/core/core.hpp>
 #include<opencv2/features2d/features2d.hpp>
 
-#include"Viewer.h"
-#include"FrameDrawer.h"
-#include"Map.h"
-#include"LocalMapping.h"
-#include"LoopClosing.h"
-#include"Frame.h"
-#include "ORBVocabulary.h"
-#include"KeyFrameDatabase.h"
-#include"ORBextractor.h"
-#include "Initializer.h"
-#include "MapDrawer.h"
-#include "System.h"
+#include"orb_slam_2/Viewer.h"
+#include"orb_slam_2/FrameDrawer.h"
+#include"orb_slam_2/Map.h"
+#include"orb_slam_2/LocalMapping.h"
+#include"orb_slam_2/LoopClosing.h"
+#include"orb_slam_2/Frame.h"
+#include "orb_slam_2/ORBVocabulary.h"
+#include"orb_slam_2/KeyFrameDatabase.h"
+#include"orb_slam_2/ORBextractor.h"
+#include "orb_slam_2/Initializer.h"
+#include "orb_slam_2/MapDrawer.h"
+#include "orb_slam_2/System.h"
 
 #include <mutex>
 
