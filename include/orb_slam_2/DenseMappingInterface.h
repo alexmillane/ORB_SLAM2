@@ -22,27 +22,35 @@ class DenseMappingInterface {
 
   // Tells the interface that a global bundle adjustment has occurred.
   void notifyFinishedGBA();
-
   // Functions for getting loop closed trajectories.
   bool isUpdatedTrajectoryAvailable();
   std::vector<PoseStamped> getUpdatedTrajectory();
 
+  // Tells interface if the last frame was a keyframe
+  void notifyKeyFrameStatusAvailable(bool keyframe_flag);
+  // Functions for getting last keyframe status
+  bool isKeyFrameStatusAvailable();
+  bool getKeyFrameStatus();
+
  protected:
 
+  // TODO(alexmillane): Replace this with a lambda in the trajectory function
   // Compares two keyframes, returning true if KF1 ID is > KF2 ID. For sorting.
   static bool compareKeyframes(KeyFrame* keyframe1, KeyFrame* keyframe2);
 
   // Map
   Map* mpMap;
 
-  // Flag indicating if a new (unfetched) trajectory is available
+  // Members to do with bundle adjusted trajectory
   bool mbUpdatedTrajectoryAvailable;
-
-  // The latest loop closed trajectory stored here
+  std::mutex mMutexTrajectory;
   std::vector<PoseStamped> mvPoseTrajectory;
 
-  // A mutex which locks the trajectory for read/write
-  std::mutex mMutexTrajectory;
+  // Members to do with keyframe status
+  bool mbKeyFrameStatusAvailable;
+  std::mutex mMutexKeyFrameStatus;
+  bool mbKeyFrameStatus;
+
 };
 
 }  // namespace ORB_SLAM

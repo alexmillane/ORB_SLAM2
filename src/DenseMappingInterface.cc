@@ -35,25 +35,39 @@ void DenseMappingInterface::notifyFinishedGBA() {
     PoseStamped post_stamped(Twc, timestamp);
     mvPoseTrajectory.push_back(post_stamped);
   }
-
   // Indicating the trajectory is ready for retreival
   mbUpdatedTrajectoryAvailable = true;
 }
+
 
 bool DenseMappingInterface::isUpdatedTrajectoryAvailable() {
   return mbUpdatedTrajectoryAvailable;
 }
 
 std::vector<PoseStamped> DenseMappingInterface::getUpdatedTrajectory() {
-  // Locking the trajectory to prevent modification on copy
   mbUpdatedTrajectoryAvailable = false;
   unique_lock<mutex> lock(mMutexTrajectory);
   return mvPoseTrajectory;
 }
 
+void DenseMappingInterface::notifyKeyFrameStatusAvailable(bool keyframe_flag) {
+  // Saving the keyframe status
+  mbKeyFrameStatus = keyframe_flag;
+  // Indicating a new status is available
+  mbKeyFrameStatusAvailable = true;
+}
+
+bool DenseMappingInterface::isKeyFrameStatusAvailable() {
+  return mbKeyFrameStatusAvailable;
+}
+bool DenseMappingInterface::getKeyFrameStatus() {
+  unique_lock<mutex> lock(mMutexKeyFrameStatus);
+  mbKeyFrameStatusAvailable = false;
+  return mbKeyFrameStatus;
+}
+
 bool DenseMappingInterface::compareKeyframes(KeyFrame* keyframe_1, KeyFrame* keyframe_2) {
     return (keyframe_1->mnId) < (keyframe_2->mnId);
 }
-
 
 }  // namespace ORB_SLAM
