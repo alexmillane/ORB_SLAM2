@@ -14,6 +14,13 @@ namespace ORB_SLAM2 {
 // A type of a stamped pose
 typedef std::pair<cv::Mat, double> PoseStamped;
 
+// A type containing a keyframe pose, a timestampe and keyframe ID
+struct PoseWithID {
+  cv::Mat pose;
+  double timestamp;
+  long unsigned int id;
+};
+
 class Map;
 
 class DenseMappingInterface {
@@ -24,7 +31,8 @@ class DenseMappingInterface {
   void notifyFinishedGBA();
   // Functions for getting loop closed trajectories.
   bool isUpdatedTrajectoryAvailable();
-  std::vector<PoseStamped> getUpdatedTrajectory();
+  //std::vector<PoseStamped> getUpdatedTrajectory();
+  std::vector<PoseWithID> getUpdatedTrajectory();
 
   // Tells interface if the last frame was a keyframe
   void notifyKeyFrameStatusAvailable(bool keyframe_flag);
@@ -44,7 +52,9 @@ class DenseMappingInterface {
   // Members to do with bundle adjusted trajectory
   bool mbUpdatedTrajectoryAvailable;
   std::mutex mMutexTrajectory;
-  std::vector<PoseStamped> mvPoseTrajectory;
+  //std::vector<PoseStamped> mvPoseTrajectory;
+  std::vector<PoseWithID> mvPoseTrajectory;
+
 
   // Members to do with keyframe status
   bool mbKeyFrameStatusAvailable;

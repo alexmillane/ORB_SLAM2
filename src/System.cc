@@ -90,7 +90,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
   // Initialize the Tracking thread
   //(it will live in the main thread of execution, the one that called this
-  //constructor)
+  // constructor)
   mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
                            mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
 
@@ -123,7 +123,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 }
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
-                            const double &timestamp) {
+                            const double &timestamp, bool* keyframe_flag) {
   if (mSensor != STEREO) {
     cerr << "ERROR: you called TrackStereo but input sensor was not set to "
             "STEREO."
@@ -161,7 +161,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
     }
   }
 
-  cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp);
+  cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp, keyframe_flag);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
@@ -171,7 +171,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
 }
 
 cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
-                          const double &timestamp) {
+                          const double &timestamp, bool* keyframe_flag) {
   if (mSensor != RGBD) {
     cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD."
          << endl;
@@ -208,7 +208,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
     }
   }
 
-  cv::Mat Tcw = mpTracker->GrabImageRGBD(im, depthmap, timestamp);
+  cv::Mat Tcw = mpTracker->GrabImageRGBD(im, depthmap, timestamp, keyframe_flag);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
@@ -217,7 +217,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
   return Tcw;
 }
 
-cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp) {
+cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp, bool* keyframe_flag) {
   if (mSensor != MONOCULAR) {
     cerr << "ERROR: you called TrackMonocular but input sensor was not set to "
             "Monocular."
@@ -255,7 +255,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp) {
     }
   }
 
-  cv::Mat Tcw = mpTracker->GrabImageMonocular(im, timestamp);
+  cv::Mat Tcw = mpTracker->GrabImageMonocular(im, timestamp, keyframe_flag);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
@@ -481,8 +481,20 @@ bool System::isUpdatedTrajectoryAvailable() {
   return mpDenseMappingInterface->isUpdatedTrajectoryAvailable();
 }
 
-std::vector<PoseStamped> System::GetUpdatedTrajectory() {
+std::vector<PoseWithID> System::GetUpdatedTrajectory() {
   return mpDenseMappingInterface->getUpdatedTrajectory();
+}
+
+bool System::isKeyFrameStatusAvailable() {
+  return mpDenseMappingInterface->isKeyFrameStatusAvailable();
+}
+
+bool System::getKeyFrameStatus() {
+  return mpDenseMappingInterface->getKeyFrameStatus();
+}
+
+long unsigned int System::getLastKeyFrameID() {
+  return mpTracker->getLastKeyFrameID();
 }
 
 }  // namespace ORB_SLAM
