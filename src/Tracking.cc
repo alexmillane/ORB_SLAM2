@@ -164,7 +164,7 @@ void Tracking::SetViewer(Viewer *pViewer)
 }
 
 
-cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp, bool* keyframe_indicator)
+cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp, bool* keyframe_indicator, bool* big_change_indicator)
 {
     mImGray = imRectLeft;
     cv::Mat imGrayRight = imRectRight;
@@ -199,6 +199,18 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
     mCurrentFrame = Frame(mImGray,imGrayRight,timestamp,mpORBextractorLeft,mpORBextractorRight,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
     Track(keyframe_indicator);
+
+    // TODO(alex.millane): hacky place to do this but whatever
+    static int nBigChanges = 0;
+    if (nBigChanges < mpMap->GetLastBigChangeIdx()) {
+        nBigChanges = mpMap->GetLastBigChangeIdx();
+        *big_change_indicator = true;
+        std::cout << "Big change detected" << std::endl;
+    }
+    else {
+        *big_change_indicator = false;
+    }
+
 
     return mCurrentFrame.mTcw.clone();
 }

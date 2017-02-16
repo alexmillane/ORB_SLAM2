@@ -123,7 +123,8 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 }
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
-                            const double &timestamp, bool* keyframe_flag) {
+                            const double &timestamp, bool *keyframe_flag,
+                            bool *big_change_flag) {
   if (mSensor != STEREO) {
     cerr << "ERROR: you called TrackStereo but input sensor was not set to "
             "STEREO."
@@ -161,7 +162,8 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
     }
   }
 
-  cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp, keyframe_flag);
+  cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp,
+                                           keyframe_flag, big_change_flag);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
