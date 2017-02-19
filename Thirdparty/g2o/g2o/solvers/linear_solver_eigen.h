@@ -123,81 +123,101 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       return true;
     }
 
-    //! do the AMD ordering on the blocks or on the scalar matrix
-    bool blockOrdering() const { return _blockOrdering;}
-    void setBlockOrdering(bool blockOrdering) { _blockOrdering = blockOrdering;}
-
-    //! write a debug dump of the system matrix if it is not SPD in solve
-    virtual bool writeDebug() const { return _writeDebug;}
-    virtual void setWriteDebug(bool b) { _writeDebug = b;}
-
-  protected:
-    bool _init;
-    bool _blockOrdering;
-    bool _writeDebug;
-    SparseMatrix _sparseMatrix;
-    CholeskyDecomposition _cholesky;
-
-    /**
-     * compute the symbolic decompostion of the matrix only once.
-     * Since A has the same pattern in all the iterations, we only
-     * compute the fill-in reducing ordering once and re-use for all
-     * the following iterations.
-     */
-    void computeSymbolicDecomposition(const SparseBlockMatrix<MatrixType>& A)
-    {
-      double t=get_monotonic_time();
-      if (! _blockOrdering) {
-        _cholesky.analyzePattern(_sparseMatrix);
-      } else {
-        // block ordering with the Eigen Interface
-        // This is really ugly currently, as it calls internal functions from Eigen
-        // and modifies the SparseMatrix class
-        Eigen::PermutationMatrix<Eigen::Dynamic,Eigen::Dynamic> blockP;
-        {
-          // prepare a block structure matrix for calling AMD
-          std::vector<Triplet> triplets;
-          for (size_t c = 0; c < A.blockCols().size(); ++c){
-            const typename SparseBlockMatrix<MatrixType>::IntBlockMap& column = A.blockCols()[c];
-            for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator it = column.begin(); it != column.end(); ++it) {
-              const int& r = it->first;
-              if (r > static_cast<int>(c)) // only upper triangle
-                break;
-              triplets.push_back(Triplet(r, c, 0.));
-            }
-          }
-
-          // call the AMD ordering on the block matrix.
-          // Relies on Eigen's internal stuff, probably bad idea
-          SparseMatrix auxBlockMatrix(A.blockCols().size(), A.blockCols().size());
-          auxBlockMatrix.setFromTriplets(triplets.begin(), triplets.end());
-          typename CholeskyDecomposition::CholMatrixType C;
-          C = auxBlockMatrix.selfadjointView<Eigen::Upper>();
-          Eigen::internal::minimum_degree_ordering(C, blockP);
-        }
-
-        int rows = A.rows();
-        assert(rows == A.cols() && "Matrix A is not square");
-
-        // Adapt the block permutation to the scalar matrix
-        PermutationMatrix scalarP;
-        scalarP.resize(rows);
-        int scalarIdx = 0;
-        for (int i = 0; i < blockP.size(); ++i) {
-          const int& p = blockP.indices()(i);
-          int base  = A.colBaseOfBlock(p);
-          int nCols = A.colsOfBlock(p);
-          for (int j = 0; j < nCols; ++j)
-            scalarP.indices()(scalarIdx++) = base++;
-        }
-        assert(scalarIdx == rows && "did not completely fill the permutation matrix");
-        // analyze with the scalar permutation
-        _cholesky.analyzePatternWithPermutation(_sparseMatrix, scalarP);
-
+    virtual bool getCovarianceMatrix(Eigen::SparseMatrix<double, Eigen::ColMajor>* cov){
+      // cant run until _sparseMatrix has been built by solve()
+      if (_init) {
+        return false;
       }
-      G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
-      if (globalStats)
-        globalStats->timeSymbolicDecomposition = get_monotonic_time() - t;
+      std::cout << "beginning covariance calculation..." << std::endl;
+      // build up covariance matrix (invert by solving AtA * _covMatrix = I)
+      // THIS IS A MASSIVE INEFFICIENT HACK THAT WILL CRIPPLE YOUR RUNTIME
+      SparseMatrix AtA = _sparseMatrix.transpose() * _sparseMatrix;
+      Eigen::SimplicialLDLT<SparseMatrix> solver;
+      solver.compute(AtA);
+      SparseMatrix I(AtA.rows(), AtA.cols());
+      I.setIdentity();
+      *cov = solver.solve(I);
+      std::cout << "finished covariance calculation" << std::endl;
+      return true;
+    }
+
+    //! do the AMD ordering on the blocks or on the scalar matrix
+    bool blockOrdering() const { return _blockOrdering; }
+    void setBlockOrdering(bool blockOrdering) {
+      _blockOrdering = blockOrdering; }
+
+  //! write a debug dump of the system matrix if it is not SPD in solve
+  virtual bool writeDebug() const { return _writeDebug; }
+  virtual void setWriteDebug(bool b) { _writeDebug = b; }
+
+protected:
+bool _init;
+bool _blockOrdering;
+bool _writeDebug;
+SparseMatrix _sparseMatrix;
+CholeskyDecomposition _cholesky;
+
+/**
+ * compute the symbolic decompostion of the matrix only once.
+ * Since A has the same pattern in all the iterations, we only
+ * compute the fill-in reducing ordering once and re-use for all
+ * the following iterations.
+ */
+void computeSymbolicDecomposition(const SparseBlockMatrix<MatrixType>& A) {
+  double t = get_monotonic_time();
+  if (!_blockOrdering) {
+    _cholesky.analyzePattern(_sparseMatrix);
+  } else {
+    // block ordering with the Eigen Interface
+    // This is really ugly currently, as it calls internal functions from Eigen
+    // and modifies the SparseMatrix class
+    Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> blockP;
+    {
+      // prepare a block structure matrix for calling AMD
+      std::vector<Triplet> triplets;
+      for (size_t c = 0; c < A.blockCols().size(); ++c) {
+        const typename SparseBlockMatrix<MatrixType>::IntBlockMap& column =
+            A.blockCols()[c];
+        for (typename SparseBlockMatrix<MatrixType>::IntBlockMap::const_iterator
+                 it = column.begin();
+             it != column.end(); ++it) {
+          const int& r = it->first;
+          if (r > static_cast<int>(c))  // only upper triangle
+            break;
+          triplets.push_back(Triplet(r, c, 0.));
+        }
+      }
+
+      // call the AMD ordering on the block matrix.
+      // Relies on Eigen's internal stuff, probably bad idea
+      SparseMatrix auxBlockMatrix(A.blockCols().size(), A.blockCols().size());
+      auxBlockMatrix.setFromTriplets(triplets.begin(), triplets.end());
+      typename CholeskyDecomposition::CholMatrixType C;
+      C = auxBlockMatrix.selfadjointView<Eigen::Upper>();
+      Eigen::internal::minimum_degree_ordering(C, blockP);
+    }
+
+    int rows = A.rows();
+    assert(rows == A.cols() && "Matrix A is not square");
+
+    // Adapt the block permutation to the scalar matrix
+    PermutationMatrix scalarP;
+    scalarP.resize(rows);
+    int scalarIdx = 0;
+    for (int i = 0; i < blockP.size(); ++i) {
+      const int& p = blockP.indices()(i);
+      int base = A.colBaseOfBlock(p);
+      int nCols = A.colsOfBlock(p);
+      for (int j = 0; j < nCols; ++j) scalarP.indices()(scalarIdx++) = base++;
+    }
+    assert(scalarIdx == rows &&
+           "did not completely fill the permutation matrix");
+    // analyze with the scalar permutation
+    _cholesky.analyzePatternWithPermutation(_sparseMatrix, scalarP);
+  }
+  G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+  if (globalStats)
+    globalStats->timeSymbolicDecomposition = get_monotonic_time() - t;
     }
 
     void fillSparseMatrix(const SparseBlockMatrix<MatrixType>& A, bool onlyValues)

@@ -37,6 +37,9 @@
 namespace ORB_SLAM2
 {
 
+bool Optimizer::_covReady;
+std::map<int, int> Optimizer::_idToIndex;
+Eigen::SparseMatrix<double, Eigen::ColMajor> Optimizer::_covMatrix;
 
 void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
@@ -187,6 +190,15 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     optimizer.initializeOptimization();
     optimizer.optimize(nIterations);
 
+    //A is build hack out cov matrix
+    linearSolver->getCovarianceMatrix(&_covMatrix);
+    _covReady = true;
+    //build list of which id goes with each matrix index
+    std::vector<g2o::OptimizableGraph::Vertex*> verts = optimizer.indexMapping();
+    for(size_t i = 0; i < verts.size(); ++i){
+        _idToIndex[verts[i]->id()] = i;
+    }
+
     // Recover optimized data
 
     //Keyframes
@@ -206,6 +218,15 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             pKF->mTcwGBA.create(4,4,CV_32F);
             Converter::toCvMat(SE3quat).copyTo(pKF->mTcwGBA);
             pKF->mnBAGlobalForKF = nLoopKF;
+        }
+
+        //only here so I can test uncertainty
+        if(i == 1){
+            std::cerr << optimizer.vertex(pKF->mnId) << " " << optimizer.vertex(pKF->mnId)->id() << std::endl;
+            Eigen::Matrix<double,6,6> cov;
+            std::cerr << "finding uncertainty " << std::endl;
+            bool success = getMarginalUncertainty(optimizer.vertex(pKF->mnId)->id(), &cov);
+            std::cerr << cov << std::endl << std::endl;
         }
     }
 
@@ -1238,6 +1259,53 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     g2oS12= vSim3_recov->estimate();
 
     return nIn;
+}
+
+// hack in uncertainty
+bool Optimizer::getMarginalUncertainty(int id, Eigen::Matrix<double,6,6>* cov) {
+  std::cerr << "A";
+  if (!_covReady) {
+    return false;
+  }
+
+  if(_idToIndex.find(id) == _idToIndex.end()){
+    return false;
+  }
+  int index = _idToIndex[id];
+
+  // get elements
+  *cov = _covMatrix.block(index * 6, index * 6, 6, 6);
+
+  return true;
+}
+
+//I have no idea if this is correct, a straight implementation of this 
+//wikipedia page (https://en.wikipedia.org/wiki/Schur_complement)
+bool Optimizer::getJointMarginalUncertainty(int id_x, int id_y,
+                                         Eigen::Matrix<double,6,6>* cov) {
+  if (!_covReady) {
+    return false;
+  }
+
+  if(_idToIndex.find(id_x) == _idToIndex.end()){
+    return false;
+  }
+  int index_x = _idToIndex[id_x];
+
+  if(_idToIndex.find(id_y) == _idToIndex.end()){
+    return false;
+  }
+  int index_y = _idToIndex[id_y];
+
+  //get parts of shur matrix
+  Eigen::Matrix<double,6,6> A = _covMatrix.block(index_x * 6, index_x * 6, 6, 6);
+  Eigen::Matrix<double,6,6> B = _covMatrix.block(index_x * 6, index_y * 6, 6, 6);
+  Eigen::Matrix<double,6,6> C = _covMatrix.block(index_y * 6, index_y * 6, 6, 6);
+  
+  //get covariance
+  *cov = A - B * C.inverse() * B.transpose();
+
+  return true;
 }
 
 

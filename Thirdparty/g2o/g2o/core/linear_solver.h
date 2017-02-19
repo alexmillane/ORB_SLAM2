@@ -78,6 +78,9 @@ class LinearSolver
     //! write a debug dump of the system matrix if it is not PSD in solve
     virtual bool writeDebug() const { return false;}
     virtual void setWriteDebug(bool) {}
+
+    //hack in uncertainty
+    virtual bool getCovarianceMatrix(Eigen::SparseMatrix<double, Eigen::ColMajor>* cov) = 0;
 };
 
 /**

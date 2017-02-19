@@ -27,6 +27,8 @@
 #include "orb_slam_2/LoopClosing.h"
 #include "orb_slam_2/Frame.h"
 
+#include "Eigen/Sparse"
+
 #include "g2o/types/types_seven_dof_expmap.h"
 
 namespace ORB_SLAM2
@@ -55,6 +57,16 @@ public:
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
                             g2o::Sim3 &g2oS12, const float th2, const bool bFixScale);
+
+    // hack in uncertainty
+    static bool getMarginalUncertainty(int id, Eigen::Matrix<double,6,6>* cov);
+    static bool getJointMarginalUncertainty(int id_x, int id_y,
+                                         Eigen::Matrix<double,6,6>* cov);
+
+private:
+  static bool _covReady;
+  static std::map<int, int> _idToIndex;
+  static Eigen::SparseMatrix<double, Eigen::ColMajor> _covMatrix;
 };
 
 } //namespace ORB_SLAM
