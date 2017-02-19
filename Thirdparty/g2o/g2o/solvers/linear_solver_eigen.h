@@ -142,22 +142,21 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     }
 
     //! do the AMD ordering on the blocks or on the scalar matrix
-    bool blockOrdering() const { return _blockOrdering; }
-    void setBlockOrdering(bool blockOrdering) {
-      _blockOrdering = blockOrdering; }
+    bool blockOrdering() const { return _blockOrdering;}
+    void setBlockOrdering(bool blockOrdering) { _blockOrdering = blockOrdering;}
 
-  //! write a debug dump of the system matrix if it is not SPD in solve
-  virtual bool writeDebug() const { return _writeDebug; }
-  virtual void setWriteDebug(bool b) { _writeDebug = b; }
+    //! write a debug dump of the system matrix if it is not SPD in solve
+    virtual bool writeDebug() const { return _writeDebug;}
+    virtual void setWriteDebug(bool b) { _writeDebug = b;}
 
-protected:
-bool _init;
-bool _blockOrdering;
-bool _writeDebug;
-SparseMatrix _sparseMatrix;
-CholeskyDecomposition _cholesky;
+  protected:
+    bool _init;
+    bool _blockOrdering;
+    bool _writeDebug;
+    SparseMatrix _sparseMatrix;
+    CholeskyDecomposition _cholesky;
 
-     /**
+    /**
      * compute the symbolic decompostion of the matrix only once.
      * Since A has the same pattern in all the iterations, we only
      * compute the fill-in reducing ordering once and re-use for all
