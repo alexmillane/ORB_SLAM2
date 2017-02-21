@@ -38,7 +38,7 @@ namespace ORB_SLAM2
 {
 
 bool Optimizer::_covReady;
-std::map<int, int> Optimizer::_idToIndex;
+std::map<long unsigned int, size_t> Optimizer::_idToIndex;
 Eigen::SparseMatrix<double, Eigen::ColMajor> Optimizer::_covMatrix;
 
 void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
@@ -188,11 +188,10 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
     // Optimize!
     optimizer.initializeOptimization();
+    linearSolver->setCovarianceMatrixPtr(&_covMatrix);
     optimizer.optimize(nIterations);
-
-    //A is build hack out cov matrix
-    linearSolver->getCovarianceMatrix(&_covMatrix);
     _covReady = true;
+
     //build list of which id goes with each matrix index
     std::vector<g2o::OptimizableGraph::Vertex*> verts = optimizer.indexMapping();
     for(size_t i = 0; i < verts.size(); ++i){
@@ -221,13 +220,11 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         }
 
         //only here so I can test uncertainty
-        if(i == 1){
-            std::cerr << optimizer.vertex(pKF->mnId) << " " << optimizer.vertex(pKF->mnId)->id() << std::endl;
-            Eigen::Matrix<double,6,6> cov;
-            std::cerr << "finding uncertainty " << std::endl;
-            bool success = getMarginalUncertainty(optimizer.vertex(pKF->mnId)->id(), &cov);
-            std::cerr << cov << std::endl << std::endl;
-        }
+        std::cerr << pKF->mnId << std::endl;
+        Eigen::Matrix<double,6,6> cov;
+        std::cerr << "finding uncertainty " << std::endl;
+        bool success = getMarginalUncertainty(pKF->mnId, &cov);
+        std::cerr << cov << std::endl << std::endl;
     }
 
     //Points

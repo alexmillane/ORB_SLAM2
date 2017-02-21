@@ -77,7 +77,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
   public:
     LinearSolverEigen() :
       LinearSolver<MatrixType>(),
-      _init(true), _blockOrdering(false), _writeDebug(false)
+      _init(true), _blockOrdering(false), _writeDebug(false), _calCov(false)
     {
     }
 
@@ -110,6 +110,20 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         return false;
       }
 
+      if(_calCov){
+        std::cout << "beginning covariance calculation..." << std::endl;
+        // build up covariance matrix (invert by solving AtA * _covMatrix = I)
+        // THIS IS A MASSIVE INEFFICIENT HACK THAT WILL CRIPPLE YOUR RUNTIME
+        SparseMatrix AtA = _sparseMatrix.transpose() * _sparseMatrix;
+        Eigen::SimplicialLDLT<SparseMatrix> solver;
+        solver.compute(AtA);
+        SparseMatrix I(AtA.rows(), AtA.cols());
+        I.setIdentity();
+        *_covPtr = solver.solve(I);
+        std::cout << "finished covariance calculation" << std::endl;
+        _calCov = false;
+      }
+
       // Solving the system
       VectorXD::MapType xx(x, _sparseMatrix.cols());
       VectorXD::ConstMapType bb(b, _sparseMatrix.cols());
@@ -123,21 +137,9 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       return true;
     }
 
-    virtual bool getCovarianceMatrix(Eigen::SparseMatrix<double, Eigen::ColMajor>* cov){
-      // cant run until _sparseMatrix has been built by solve()
-      if (_init) {
-        return false;
-      }
-      std::cout << "beginning covariance calculation..." << std::endl;
-      // build up covariance matrix (invert by solving AtA * _covMatrix = I)
-      // THIS IS A MASSIVE INEFFICIENT HACK THAT WILL CRIPPLE YOUR RUNTIME
-      SparseMatrix AtA = _sparseMatrix.transpose() * _sparseMatrix;
-      Eigen::SimplicialLDLT<SparseMatrix> solver;
-      solver.compute(AtA);
-      SparseMatrix I(AtA.rows(), AtA.cols());
-      I.setIdentity();
-      *cov = solver.solve(I);
-      std::cout << "finished covariance calculation" << std::endl;
+    virtual bool setCovarianceMatrixPtr(Eigen::SparseMatrix<double, Eigen::ColMajor>* covPtr){
+      _covPtr = covPtr;
+      _calCov = true;
       return true;
     }
 
@@ -153,6 +155,8 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     bool _init;
     bool _blockOrdering;
     bool _writeDebug;
+    bool _calCov;
+    SparseMatrix* _covPtr;
     SparseMatrix _sparseMatrix;
     CholeskyDecomposition _cholesky;
 

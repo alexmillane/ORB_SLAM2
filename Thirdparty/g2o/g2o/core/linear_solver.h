@@ -80,7 +80,7 @@ class LinearSolver
     virtual void setWriteDebug(bool) {}
 
     //hack in uncertainty
-    virtual bool getCovarianceMatrix(Eigen::SparseMatrix<double, Eigen::ColMajor>* cov) = 0;
+    virtual bool setCovarianceMatrixPtr(Eigen::SparseMatrix<double, Eigen::ColMajor>* covPtr) = 0;
 };
 
 /**

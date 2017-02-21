@@ -65,7 +65,7 @@ public:
 
 private:
   static bool _covReady;
-  static std::map<int, int> _idToIndex;
+  static std::map<long unsigned int, size_t> _idToIndex;
   static Eigen::SparseMatrix<double, Eigen::ColMajor> _covMatrix;
 };
 
