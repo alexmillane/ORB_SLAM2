@@ -113,7 +113,7 @@ namespace g2o {
       }
 
       //hack in uncertainty
-      virtual bool setCovarianceMatrixPtr(Eigen::SparseMatrix<double, Eigen::ColMajor>* covPtr){return false;}
+      virtual bool setCovarianceMatrixPtr(Eigen::SparseMatrix<double, Eigen::ColMajor>* AtAPtr){return false;}
 
     protected:
       bool _reset;

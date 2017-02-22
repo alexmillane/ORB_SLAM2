@@ -77,7 +77,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
   public:
     LinearSolverEigen() :
       LinearSolver<MatrixType>(),
-      _init(true), _blockOrdering(false), _writeDebug(false), _calCov(false)
+      _init(true), _blockOrdering(false), _writeDebug(false), _updateAtA(false)
     {
     }
 
@@ -110,18 +110,11 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         return false;
       }
 
-      if(_calCov){
-        std::cout << "beginning covariance calculation..." << std::endl;
-        // build up covariance matrix (invert by solving AtA * _covMatrix = I)
-        // THIS IS A MASSIVE INEFFICIENT HACK THAT WILL CRIPPLE YOUR RUNTIME
-        SparseMatrix AtA = _sparseMatrix.transpose() * _sparseMatrix;
-        Eigen::SimplicialLDLT<SparseMatrix> solver;
-        solver.compute(AtA);
-        SparseMatrix I(AtA.rows(), AtA.cols());
-        I.setIdentity();
-        *_covPtr = solver.solve(I);
-        std::cout << "finished covariance calculation" << std::endl;
-        _calCov = false;
+      if(_updateAtA){
+        //rebuild in case the order has been messed with
+        fillSparseMatrix(A, false);
+        *_AtAPtr = _sparseMatrix.transpose() * _sparseMatrix;
+        _updateAtA = false;
       }
 
       // Solving the system
@@ -137,9 +130,9 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       return true;
     }
 
-    virtual bool setCovarianceMatrixPtr(Eigen::SparseMatrix<double, Eigen::ColMajor>* covPtr){
-      _covPtr = covPtr;
-      _calCov = true;
+    virtual bool setCovarianceMatrixPtr(Eigen::SparseMatrix<double, Eigen::ColMajor>* AtAPtr){
+      _AtAPtr = AtAPtr;
+      _updateAtA = true;
       return true;
     }
 
@@ -155,8 +148,8 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     bool _init;
     bool _blockOrdering;
     bool _writeDebug;
-    bool _calCov;
-    SparseMatrix* _covPtr;
+    bool _updateAtA;
+    SparseMatrix* _AtAPtr;
     SparseMatrix _sparseMatrix;
     CholeskyDecomposition _cholesky;
 

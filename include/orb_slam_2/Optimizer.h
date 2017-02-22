@@ -27,7 +27,7 @@
 #include "orb_slam_2/LoopClosing.h"
 #include "orb_slam_2/Frame.h"
 
-#include "Eigen/Sparse"
+#include <Eigen/Sparse>
 
 #include "g2o/types/types_seven_dof_expmap.h"
 
@@ -58,15 +58,12 @@ public:
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
                             g2o::Sim3 &g2oS12, const float th2, const bool bFixScale);
 
-    // hack in uncertainty
-    static bool getMarginalUncertainty(int id, Eigen::Matrix<double,6,6>* cov);
-    static bool getJointMarginalUncertainty(int id_x, int id_y,
-                                         Eigen::Matrix<double,6,6>* cov);
+    std::shared_ptr<std::pair<std::vector<long unsigned int>, Eigen::SparseMatrix<double, Eigen::ColMajor>>> static getCovInfo();
 
 private:
   static bool _covReady;
-  static std::map<long unsigned int, size_t> _idToIndex;
-  static Eigen::SparseMatrix<double, Eigen::ColMajor> _covMatrix;
+
+  static std::shared_ptr<std::pair<std::vector<long unsigned int>, Eigen::SparseMatrix<double, Eigen::ColMajor>>> _covInfoPtr;
 };
 
 } //namespace ORB_SLAM
