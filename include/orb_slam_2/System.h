@@ -65,7 +65,8 @@ class System {
   // grayscale.
   // Returns the camera pose (empty if tracking fails).
   cv::Mat TrackStereo(const cv::Mat& imLeft, const cv::Mat& imRight,
-                      const double& timestamp);
+                      const double& timestamp, bool* keyframe_flag,
+                      bool* big_change_flag);
 
   // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
   // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to
@@ -73,13 +74,13 @@ class System {
   // Input depthmap: Float (CV_32F).
   // Returns the camera pose (empty if tracking fails).
   cv::Mat TrackRGBD(const cv::Mat& im, const cv::Mat& depthmap,
-                    const double& timestamp);
+                    const double& timestamp, bool* keyframe_flag);
 
   // Proccess the given monocular frame
   // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to
   // grayscale.
   // Returns the camera pose (empty if tracking fails).
-  cv::Mat TrackMonocular(const cv::Mat& im, const double& timestamp);
+  cv::Mat TrackMonocular(const cv::Mat& im, const double& timestamp, bool* keyframe_flag);
 
   // This stops local mapping thread (map building) and performs only camera
   // tracking.
@@ -130,7 +131,14 @@ class System {
 
   // Functions related to trajectory publishing
   bool isUpdatedTrajectoryAvailable();
-  std::vector<PoseStamped> GetUpdatedTrajectory();
+  std::vector<PoseWithID> GetUpdatedTrajectory();
+
+  // Functions related to trajectory publishing
+  bool isKeyFrameStatusAvailable();
+  bool getKeyFrameStatus();
+
+  // Returns the last frame 
+  long unsigned int getLastKeyFrameID();
 
  private:
   // Input sensor

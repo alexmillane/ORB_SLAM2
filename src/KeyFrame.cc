@@ -463,6 +463,9 @@ void KeyFrame::SetBadFlag()
         }
     }
 
+    // DEBUG OUTPUT
+    std::cout << "Keyframe being erased with ID: " << mnId << std::endl;
+
     for(map<KeyFrame*,int>::iterator mit = mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
         mit->first->EraseConnection(this);
 
