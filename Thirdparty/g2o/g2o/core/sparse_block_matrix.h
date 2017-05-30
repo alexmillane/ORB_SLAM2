@@ -193,6 +193,12 @@ class SparseBlockMatrix {
     bool writeOctave(const char* filename, bool upperTriangle = true) const;
 
     /**
+     * write the content of this matrix to a stream loadable by Matlab
+     * @param upperTriangle does this matrix store only the upper triangular blocks
+     */
+    bool writeMatlab(const char* filename, bool upperTriangle = true) const;
+
+    /**
      * copy into CCS structure
      * @return number of processed blocks, -1 on error
      */

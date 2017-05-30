@@ -31,7 +31,8 @@ using namespace std;
 namespace g2o {
 
 OptimizationAlgorithm::OptimizationAlgorithm() :
-  _optimizer(0)
+  _optimizer(0),
+  _alexDebug(false)
 {
 }
 
@@ -57,6 +58,10 @@ bool OptimizationAlgorithm::updatePropertiesFromString(const std::string& propSt
 void OptimizationAlgorithm::setOptimizer(SparseOptimizer* optimizer)
 {
   _optimizer = optimizer;
+}
+
+void OptimizationAlgorithm::setAlexDebug(bool alexDebug) {
+  _alexDebug = alexDebug;
 }
 
 } // end namespace

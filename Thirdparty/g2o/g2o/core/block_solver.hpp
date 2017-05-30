@@ -59,6 +59,7 @@ BlockSolver<Traits>::BlockSolver(LinearSolverType* linearSolver) :
   _sizePoses=0;
   _sizeLandmarks=0;
   _doSchur=true;
+  _alexDebug = false;
 }
 
 template <typename Traits>
@@ -430,7 +431,8 @@ bool BlockSolver<Traits>::solve(){
       }
     }
   }
-  //cerr << "Solve [marginalize] = " <<  get_monotonic_time()-t << endl;
+  if (_alexDebug)
+    cerr << "Solve [marginalize] = " <<  get_monotonic_time()-t << endl;
 
   // _bschur = _b for calling solver, and not touching _b
   memcpy(_bschur, _b, _sizePoses * sizeof(double));
@@ -451,7 +453,8 @@ bool BlockSolver<Traits>::solve(){
     globalStats->hessianLandmarkDimension = _Hll->cols();
     globalStats->hessianDimension = globalStats->hessianPoseDimension + globalStats->hessianLandmarkDimension;
   }
-  //cerr << "Solve [decompose and solve] = " <<  get_monotonic_time()-t << endl;
+  if (_alexDebug)
+    cerr << "Solve [decompose and solve] = " <<  get_monotonic_time()-t << endl;
 
   if (! solvedPoses)
     return false;
@@ -480,7 +483,8 @@ bool BlockSolver<Traits>::solve(){
   memset(xl,0, _sizeLandmarks*sizeof(double));
   _DInvSchur->multiply(xl,cl);
   //_DInvSchur->rightMultiply(xl,cl);
-  //cerr << "Solve [landmark delta] = " <<  get_monotonic_time()-t << endl;
+  if (_alexDebug)
+    cerr << "Solve [landmark delta] = " <<  get_monotonic_time()-t << endl;
 
   return true;
 }
@@ -629,6 +633,113 @@ template <typename Traits>
 bool BlockSolver<Traits>::saveHessian(const std::string& fileName) const
 {
   return _Hpp->writeOctave(fileName.c_str(), true);
+}
+
+
+template <typename Traits>
+bool BlockSolver<Traits>::printProblemSize() const
+{
+
+  // Printing out the matrices sizes
+  std::cout << "_Hpp->cols(): " << _Hpp->cols() << std::endl;
+  std::cout << "_Hpp->rows(): " << _Hpp->rows() << std::endl;
+  std::cout << "_Hpp->nonZeros(): " << _Hpp->nonZeros() << std::endl;
+  std::cout << "_Hpp->nonZeroBlocks(): " << _Hpp->nonZeroBlocks() << std::endl;
+
+  std::cout << "_Hll->cols(): " << _Hll->cols() << std::endl;
+  std::cout << "_Hll->rows(): " << _Hll->rows() << std::endl;
+  std::cout << "_Hll->nonZeros(): " << _Hll->nonZeros() << std::endl;
+  std::cout << "_Hll->nonZeroBlocks(): " << _Hll->nonZeroBlocks() << std::endl;
+
+  std::cout << "_Hpl->cols(): " << _Hpl->cols() << std::endl;
+  std::cout << "_Hpl->rows(): " << _Hpl->rows() << std::endl;
+  std::cout << "_Hpl->nonZeros(): " << _Hpl->nonZeros() << std::endl;
+  std::cout << "_Hpl->nonZeroBlocks(): " << _Hpl->nonZeroBlocks() << std::endl;
+
+  // The schur compliment matrix
+  std::cout << "_Hschur->cols(): " << _Hschur->cols() << std::endl;
+  std::cout << "_Hschur->rows(): " << _Hschur->rows() << std::endl;
+  std::cout << "_Hschur->nonZeros(): " << _Hschur->nonZeros() << std::endl;
+  std::cout << "_Hschur->nonZeroBlocks(): " << _Hschur->nonZeroBlocks() << std::endl;
+  
+}
+
+template <typename Traits>
+bool BlockSolver<Traits>::saveDebugData(const std::string& fileNameStart) const
+{
+  return saveHessianParts(fileNameStart);
+}
+
+
+template <typename Traits>
+bool BlockSolver<Traits>::saveHessianParts(const std::string& fileNameStart) const
+{
+
+  // DEBUG(alexmillane)
+  std::cout << "Saving hessians to file" << std::endl;
+
+  // Filenames
+  std::string fileName_Hpp(fileNameStart + "_Hpp");
+  std::string fileName_Hll(fileNameStart + "_Hll");
+  std::string fileName_Hpl(fileNameStart + "_Hpl");
+  std::string fileName_Hschur(fileNameStart + "_Hschur");
+
+  // Writing
+  bool ok1 = _Hpp->writeMatlab(fileName_Hpp.c_str(), true);
+  bool ok2 = _Hll->writeMatlab(fileName_Hll.c_str(), true);
+  //bool ok2 = true;
+  bool ok3 = _Hpl->writeMatlab(fileName_Hpl.c_str(), false);
+  //bool ok3 = true;
+  bool ok4 = _Hschur->writeMatlab(fileName_Hschur.c_str(), true);
+  //bool ok4 = true;
+
+  // DEBUG(alexmillane)
+  std::cout << "Saving hessians to file" << std::endl;
+
+
+  // Return
+  return ok1 & ok2 & ok3 & ok4;
+}
+
+template <typename Traits>
+bool BlockSolver<Traits>::computePoseCovariance()
+{
+
+  // DEBUG
+  std::cout << "In pose covariance computation function." << std::endl;
+
+  // If not computing by schur's compliment this function will not work.
+  if (!_doSchur)
+    return false;
+
+
+
+
+  /*
+   * If schur complement is used for solving then the underlying solver is primed
+   * (in terms of decomposition) for working with _Hschur.
+   */
+
+  // Making a sparse identity
+  // NOTE(alexmillane): Not sure if this is best as a sparse block matrix or just 
+  //                    a sparse scalar matrix
+
+
+  // Retrieving the inverse of the schur compliment matrix
+  double t=get_monotonic_time();
+  _linearSolver->solveInverse(*_Hschur);
+  cerr << "Covariance [whole] = " <<  get_monotonic_time()-t << endl;
+
+  /*
+   * The plan is to make this sparse matrix and then pass it to a new solve function
+   * which will solve for a matrix
+   */
+
+
+  //_Hschur
+
+  // Success
+  return true;
 }
 
 } // end namespace

@@ -91,7 +91,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       return true;
     }
 
-    bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b)
+    bool preSolve(const SparseBlockMatrix<MatrixType>& A, double* t) 
     {
       if (_init)
         _sparseMatrix.resize(A.rows(), A.cols());
@@ -100,7 +100,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         computeSymbolicDecomposition(A);
       _init = false;
 
-      double t=get_monotonic_time();
+      *t=get_monotonic_time();
       _cholesky.factorize(_sparseMatrix);
       if (_cholesky.info() != Eigen::Success) { // the matrix is not positive definite
         if (_writeDebug) {
@@ -109,11 +109,24 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         }
         return false;
       }
+    }
+
+    bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b)
+    {
+      // NOTE(alexmillane): Put this in a function so I can use the presolve
+      //                    steps elsewhere.
+      // Factorize
+      double t;
+      if (!preSolve(A, &t)) {
+        return false;
+      }
 
       // Solving the system
       VectorXD::MapType xx(x, _sparseMatrix.cols());
       VectorXD::ConstMapType bb(b, _sparseMatrix.cols());
       xx = _cholesky.solve(bb);
+
+      // Stats
       G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
       if (globalStats) {
         globalStats->timeNumericDecomposition = get_monotonic_time() - t;
@@ -122,6 +135,32 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
 
       return true;
     }
+
+
+    bool solveInverse(const SparseBlockMatrix<MatrixType>& A)
+    {
+      // DEBUG (alexmillane)
+      std::cout << "In alex's solve inverse function." << std::endl;
+
+      // Factorize
+      double t;
+      if (!preSolve(A, &t)) {
+        return false;
+      }
+
+      // The identity for the RHS of the inverse equation
+      int size = A.cols();
+      SparseMatrix I(size, size);
+      I.setIdentity();
+
+      // Doing the solve
+      _cholesky.solve(I);
+
+      return true;
+
+    }
+
+
 
     //! do the AMD ordering on the blocks or on the scalar matrix
     bool blockOrdering() const { return _blockOrdering;}

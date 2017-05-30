@@ -61,6 +61,11 @@ namespace g2o {
       virtual void setWriteDebug(bool writeDebug);
       virtual bool writeDebug() const { return _writeDebug->value();}
 
+      // DEBUG(alexmillane)
+      virtual bool printHessianSize() const;
+      virtual bool saveDebugData(const std::string& fileNameStart) const;
+      virtual bool computePoseCovariance();
+
     protected:
       Solver* _solver;
       Property<bool>* _writeDebug;

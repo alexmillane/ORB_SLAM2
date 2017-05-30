@@ -131,7 +131,14 @@ namespace g2o {
       //! write the hessian to disk using the specified file name
       virtual bool saveHessian(const std::string& /*fileName*/) const = 0;
 
-    protected:
+      // DEBUG(alexmillane)
+      // These functions are implemented by (some) inherited classes
+      virtual bool printProblemSize() const { return false; }
+      virtual void setAlexDebug(bool alexDebug) {_alexDebug = alexDebug;}
+      virtual bool saveDebugData(const std::string& fileNameStart ) const { return false; }
+      virtual bool computePoseCovariance() { return false; }
+
+     protected:
       SparseOptimizer* _optimizer;
       double* _x;
       double* _b;
@@ -140,6 +147,9 @@ namespace g2o {
       size_t _additionalVectorSpace;
 
       void resizeVector(size_t sx);
+
+      // DEBUG(alexmillane)
+      bool _alexDebug;
 
     private:
       // Disable the copy constructor and assignment operator

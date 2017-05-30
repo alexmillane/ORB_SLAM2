@@ -141,6 +141,12 @@ namespace g2o {
 
       virtual void multiplyHessian(double* dest, const double* src) const { _Hpp->multiplySymmetricUpperTriangle(dest, src);}
 
+      // DEBUG(alexmillane)
+      virtual bool printProblemSize() const;
+      virtual bool saveDebugData(const std::string& fileNameStart) const;
+      virtual bool saveHessianParts(const std::string& fileNameStart) const;
+      virtual bool computePoseCovariance();
+
     protected:
       void resize(int* blockPoseIndices, int numPoseBlocks, 
           int* blockLandmarkIndices, int numLandmarkBlocks, int totalDim);
@@ -173,6 +179,7 @@ namespace g2o {
 
       int _numPoses, _numLandmarks;
       int _sizePoses, _sizeLandmarks;
+
   };
 
 

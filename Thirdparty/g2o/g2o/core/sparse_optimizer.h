@@ -178,6 +178,10 @@ namespace g2o {
     bool verbose()  const {return _verbose;}
     void setVerbose(bool verbose);
 
+    // DEBUG(alexmillane)
+    void setAlexDebug(bool alexDebug);
+    void setComputePoseCovariance(bool computePoseCovariance) {_computePoseCovariance = computePoseCovariance;}
+
     /**
      * sets a variable checked at every iteration to force a user stop. The iteration exits when the variable is true;
      */
@@ -306,6 +310,11 @@ namespace g2o {
 
     BatchStatisticsContainer _batchStatistics;   ///< global statistics of the optimizer, e.g., timing, num-non-zeros
     bool _computeBatchStatistics;
+
+    //DEBUG(alexmillane)
+    bool _alexDebug;
+    bool _computePoseCovariance;
+
   };
 } // end namespace
 

@@ -48,7 +48,7 @@ namespace g2o{
 
 
   SparseOptimizer::SparseOptimizer() :
-    _forceStopFlag(0), _verbose(false), _algorithm(0), _computeBatchStatistics(false)
+    _forceStopFlag(0), _verbose(false), _algorithm(0), _computeBatchStatistics(false), _alexDebug(false), _computePoseCovariance(false)
   {
     _graphActions.resize(AT_NUM_ELEMENTS);
   }
@@ -388,6 +388,8 @@ namespace g2o{
       result = _algorithm->solve(i, online);
       ok = ( result == OptimizationAlgorithm::OK );
 
+
+
       bool errorComputed = false;
       if (_computeBatchStatistics) {
         computeActiveErrors();
@@ -415,6 +417,23 @@ namespace g2o{
     if (result == OptimizationAlgorithm::Fail) {
       return 0;
     }
+
+    // DEBUG(alexmillane).
+    // Saving the Hessians
+    //constexpr bool saveHessianDebugData = true;
+    if (_alexDebug) {
+      const static std::string hessianDebugFilePathStart =
+          "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+          "covariance/hessian";
+      _algorithm->saveDebugData(hessianDebugFilePathStart);
+    }
+
+    // DEBUG(alexmillane).
+    // Calculating the pose covariance
+    if (_computePoseCovariance) {
+      _algorithm->computePoseCovariance();
+    }
+
     return cjIterations;
   }
 
@@ -530,9 +549,9 @@ namespace g2o{
     for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it) {
       OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*>(*it);
       if (v)
-	v->push();
+  v->push();
       else 
-	cerr << __FUNCTION__ << ": FATAL PUSH SET" << endl;
+  cerr << __FUNCTION__ << ": FATAL PUSH SET" << endl;
     }
   }
 
@@ -541,9 +560,9 @@ namespace g2o{
     for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it){
       OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*> (*it);
       if (v)
-	v->pop();
+  v->pop();
       else 
-	cerr << __FUNCTION__ << ": FATAL POP SET" << endl;
+  cerr << __FUNCTION__ << ": FATAL POP SET" << endl;
     }
   }
 
@@ -556,6 +575,12 @@ namespace g2o{
   void SparseOptimizer::setVerbose(bool verbose)
   {
     _verbose = verbose;
+  }
+
+  void SparseOptimizer::setAlexDebug(bool alexDebug)
+  {
+    _algorithm->setAlexDebug(alexDebug);
+    _alexDebug = alexDebug;
   }
 
   void SparseOptimizer::setAlgorithm(OptimizationAlgorithm* algorithm)

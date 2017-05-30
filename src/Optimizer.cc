@@ -38,16 +38,16 @@ namespace ORB_SLAM2
 {
 
 
-void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
+void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust, const bool bGetPoseMarginals)
 {
     vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
     vector<MapPoint*> vpMP = pMap->GetAllMapPoints();
-    BundleAdjustment(vpKFs,vpMP,nIterations,pbStopFlag, nLoopKF, bRobust);
+    BundleAdjustment(vpKFs,vpMP,nIterations,pbStopFlag, nLoopKF, bRobust, bGetPoseMarginals);
 }
 
 
 void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,
-                                 int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
+                                 int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust, const bool bGetPoseMarginals)
 {
     vector<bool> vbNotIncludedMP;
     vbNotIncludedMP.resize(vpMP.size());
@@ -61,6 +61,13 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     optimizer.setAlgorithm(solver);
+
+    // DEBUG(alexmillane): Setting the optimizer verbose to get some feedback
+    constexpr bool optimizer_verbosity = true;
+    optimizer.setVerbose(optimizer_verbosity);
+    constexpr bool alex_debug = true;
+    optimizer.setAlexDebug(alex_debug);
+
 
     if(pbStopFlag)
         optimizer.setForceStopFlag(pbStopFlag);
@@ -234,6 +241,10 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         }
     }
 
+    // Recover Pose Hessian
+    if (bGetPoseMarginals) {
+        
+    }
 }
 
 int Optimizer::PoseOptimization(Frame *pFrame)
@@ -513,6 +524,30 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
 
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
     optimizer.setAlgorithm(solver);
+
+
+    // DEBUG(alexmillane): Setting the optimizer verbose to get some feedback
+    /********************************************
+     * UP TO HERE!!!
+     ********************************************/
+    constexpr bool optimizer_verbosity = true;
+    optimizer.setVerbose(optimizer_verbosity);
+    constexpr bool optimizer_alex_debug = false;
+    optimizer.setAlexDebug(optimizer_alex_debug);
+
+    constexpr bool compute_pose_covariance = true;
+    optimizer.setComputePoseCovariance(compute_pose_covariance);
+
+    constexpr bool solver_alex_debug = true;
+    solver_ptr->setAlexDebug(solver_alex_debug);
+
+    // Some statistics
+    constexpr bool top_level_alex_debug = true;
+    if (top_level_alex_debug) {
+      std::cout << "lLocalKeyFrames.size(): " << lLocalKeyFrames.size() << std::endl;
+      std::cout << "lLocalMapPoints.size(): " << lLocalMapPoints.size() << std::endl;
+      std::cout << "lFixedCameras.size(): " << lFixedCameras.size() << std::endl;
+    }
 
     if(pbStopFlag)
         optimizer.setForceStopFlag(pbStopFlag);
