@@ -64,7 +64,7 @@ namespace g2o {
       // DEBUG(alexmillane)
       virtual bool printHessianSize() const;
       virtual bool saveDebugData(const std::string& fileNameStart) const;
-      virtual bool computePoseCovariance();
+      virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance);
 
     protected:
       Solver* _solver;

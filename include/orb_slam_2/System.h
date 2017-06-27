@@ -132,6 +132,8 @@ class System {
   // Functions related to trajectory publishing
   bool isUpdatedTrajectoryAvailable();
   std::vector<PoseWithID> GetUpdatedTrajectory();
+  //bool isUpdatedTrajectoryWithCovarianceAvailable();
+
 
   // Functions related to trajectory publishing
   bool isKeyFrameStatusAvailable();
@@ -139,6 +141,9 @@ class System {
 
   // Returns the last frame 
   long unsigned int getLastKeyFrameID();
+
+  // Kicks off global bundle adjustment
+  bool startGlobalBundleAdjustment();
 
  private:
   // Input sensor

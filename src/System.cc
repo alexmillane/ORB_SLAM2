@@ -499,4 +499,11 @@ long unsigned int System::getLastKeyFrameID() {
   return mpTracker->getLastKeyFrameID();
 }
 
+bool System::startGlobalBundleAdjustment() {
+  // Starting the global bundle adjustment and subsequent map correction.
+  // UP TO HERE. DO SOMETHING. 
+  // GLOBAL BUNDLE ADJUSTMENT NOW IN THE LOOP CLOSER
+  //void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust, const bool bGetPoseMarginals)
+}
+
 }  // namespace ORB_SLAM

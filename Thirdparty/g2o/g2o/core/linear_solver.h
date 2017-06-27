@@ -75,7 +75,7 @@ class LinearSolver
       return false;
     }
 
-    virtual bool solveInverse(const SparseBlockMatrix<MatrixType>& A) {
+    virtual bool solveInverse(const SparseBlockMatrix<MatrixType>& A, Eigen::MatrixXd* AInv) {
       return false;
     }
 

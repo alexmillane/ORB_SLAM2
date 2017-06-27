@@ -180,7 +180,10 @@ namespace g2o {
 
     // DEBUG(alexmillane)
     void setAlexDebug(bool alexDebug);
-    void setComputePoseCovariance(bool computePoseCovariance) {_computePoseCovariance = computePoseCovariance;}
+    // Depricated
+    //void setComputePoseCovariance(bool computePoseCovariance) {_computePoseCovariance = computePoseCovariance;}
+    //void setPoseCovarianceOutput(MatrixXd& poseCovariance);
+    bool computePoseCovariance(MatrixXd& poseCovariance);
 
     /**
      * sets a variable checked at every iteration to force a user stop. The iteration exits when the variable is true;
@@ -313,7 +316,9 @@ namespace g2o {
 
     //DEBUG(alexmillane)
     bool _alexDebug;
-    bool _computePoseCovariance;
+    //bool _computePoseCovariance;
+    //MatrixXd* _poseCovariance;
+    //bool _poseCovarianceDestinationSet;
 
   };
 } // end namespace

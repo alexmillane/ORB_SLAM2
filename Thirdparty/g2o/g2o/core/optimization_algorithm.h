@@ -82,7 +82,7 @@ namespace g2o {
       // DEBUG(alexmillane)
       virtual void setAlexDebug(bool alex_debug);
       virtual bool saveDebugData(const std::string& fileNameStart) const { return false; }
-      virtual bool computePoseCovariance() { return false; }
+      virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
 
      public:
       //! return the optimizer operating on

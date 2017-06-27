@@ -622,7 +622,7 @@ void LoopClosing::RequestReset()
 
     while(1)
     {
-        {
+        { 
         unique_lock<mutex> lock2(mMutexReset);
         if(!mbResetRequested)
             break;
@@ -646,8 +646,15 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 {
     cout << "Starting Global Bundle Adjustment" << endl;
 
+    constexpr bool calculatePoseCovarianceMatrix = true;
+    Eigen::MatrixXd poseCavarianceMatrix;
+    std::map<unsigned long, int> KFidToHessianCol;
     int idx =  mnFullBAIdx;
-    Optimizer::GlobalBundleAdjustemnt(mpMap,10,&mbStopGBA,nLoopKF,false);
+    if (calculatePoseCovarianceMatrix) {
+        Optimizer::GlobalBundleAdjustemnt(mpMap,10,&mbStopGBA,nLoopKF,false,&poseCavarianceMatrix,&KFidToHessianCol);
+    } else {
+        Optimizer::GlobalBundleAdjustemnt(mpMap,10,&mbStopGBA,nLoopKF,false);
+    }   
 
     // Update all MapPoints and KeyFrames
     // Local Mapping was active during BA, that means that there might be new keyframes
@@ -746,10 +753,24 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
         mbFinishedGBA = true;
         mbRunningGBA = false;
 
+        // Storing the Pose covariance if calculated
+        if (calculatePoseCovarianceMatrix) {
+            mpDenseMappingInterface->storePoseCovarianceMatrix(poseCavarianceMatrix, KFidToHessianCol);
+        }
         // Notifying the dense mapping system that a global bundle adjustment has occurred.
         mpDenseMappingInterface->notifyFinishedGBA();
     }
 }
+
+void LoopClosing::RunGlobalBundleAdjustmentWithoutLoop()
+{
+/*    // Launch a new thread to perform Global Bundle Adjustment
+    mbRunningGBA = true;
+    mbFinishedGBA = false;
+    mbStopGBA = false;
+    // TODO(alexmillane): See what this is using the current keyframe for.
+    mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
+*/}
 
 void LoopClosing::RequestFinish()
 {

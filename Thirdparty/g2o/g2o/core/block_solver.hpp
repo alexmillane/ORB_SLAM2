@@ -33,6 +33,9 @@
 #include "../stuff/macros.h"
 #include "../stuff/misc.h"
 
+//DEBUG(alexmillane)
+#include "dense_matrix_io.h"
+
 namespace g2o {
 
 using namespace std;
@@ -51,6 +54,7 @@ BlockSolver<Traits>::BlockSolver(LinearSolverType* linearSolver) :
   _HschurTransposedCCS = 0;
   _Hschur=0;
   _DInvSchur=0;
+  //_HschurInv=0;
   _coefficients=0;
   _bschur = 0;
   _xSize=0;
@@ -60,6 +64,9 @@ BlockSolver<Traits>::BlockSolver(LinearSolverType* linearSolver) :
   _sizeLandmarks=0;
   _doSchur=true;
   _alexDebug = false;
+  _t_marginalize_cum = 0.0;
+  _t_solve_cum = 0.0;
+  _t_landmark_delta_cum = 0.0;
 }
 
 template <typename Traits>
@@ -111,6 +118,10 @@ void BlockSolver<Traits>::deallocate()
     delete _Hschur;
     _Hschur=0;
   }
+/*  if (_HschurInv){
+    delete _HschurInv;
+    _HschurInv=0;
+  }*/
   if (_DInvSchur){
     delete _DInvSchur;
     _DInvSchur=0;
@@ -431,8 +442,12 @@ bool BlockSolver<Traits>::solve(){
       }
     }
   }
-  if (_alexDebug)
-    cerr << "Solve [marginalize] = " <<  get_monotonic_time()-t << endl;
+  if (_alexDebug) {
+    double marginalize_time = get_monotonic_time()-t;
+    cerr << "Solve [marginalize] = " << marginalize_time << endl;
+    _t_marginalize_cum += marginalize_time;
+    cerr << "Cumulative [marginalize] = " << _t_marginalize_cum << endl;
+  }
 
   // _bschur = _b for calling solver, and not touching _b
   memcpy(_bschur, _b, _sizePoses * sizeof(double));
@@ -453,8 +468,12 @@ bool BlockSolver<Traits>::solve(){
     globalStats->hessianLandmarkDimension = _Hll->cols();
     globalStats->hessianDimension = globalStats->hessianPoseDimension + globalStats->hessianLandmarkDimension;
   }
-  if (_alexDebug)
-    cerr << "Solve [decompose and solve] = " <<  get_monotonic_time()-t << endl;
+  if (_alexDebug) {
+    double solve_time = get_monotonic_time()-t;
+    cerr << "Solve [decompose and solve] = " <<  solve_time << endl;
+    _t_solve_cum += solve_time;
+    cerr << "Cumulative [decompose and solve] = " << _t_solve_cum << endl;
+  }
 
   if (! solvedPoses)
     return false;
@@ -483,8 +502,12 @@ bool BlockSolver<Traits>::solve(){
   memset(xl,0, _sizeLandmarks*sizeof(double));
   _DInvSchur->multiply(xl,cl);
   //_DInvSchur->rightMultiply(xl,cl);
-  if (_alexDebug)
-    cerr << "Solve [landmark delta] = " <<  get_monotonic_time()-t << endl;
+  if (_alexDebug) {
+    double landmark_delta_time = get_monotonic_time()-t;
+    cerr << "Solve [landmark delta] = " <<  landmark_delta_time << endl;
+    _t_landmark_delta_cum += landmark_delta_time;
+    cerr << "Cumulative [landmark delta] = " << _t_landmark_delta_cum << endl;
+  }
 
   return true;
 }
@@ -683,63 +706,55 @@ bool BlockSolver<Traits>::saveHessianParts(const std::string& fileNameStart) con
   std::string fileName_Hll(fileNameStart + "_Hll");
   std::string fileName_Hpl(fileNameStart + "_Hpl");
   std::string fileName_Hschur(fileNameStart + "_Hschur");
+//  std::string fileName_HschurInv(fileNameStart + "_HschurInv");
 
   // Writing
-  bool ok1 = _Hpp->writeMatlab(fileName_Hpp.c_str(), true);
-  bool ok2 = _Hll->writeMatlab(fileName_Hll.c_str(), true);
-  //bool ok2 = true;
-  bool ok3 = _Hpl->writeMatlab(fileName_Hpl.c_str(), false);
-  //bool ok3 = true;
-  bool ok4 = _Hschur->writeMatlab(fileName_Hschur.c_str(), true);
-  //bool ok4 = true;
+  bool ok1 = true;
+  bool ok2 = true;
+  bool ok3 = true;
+  bool ok4 = true;
+  bool ok5 = true;
+  if(_Hpp)
+    ok1 = _Hpp->writeMatlab(fileName_Hpp.c_str(), true);
+  if (_Hll) 
+    ok2 = _Hll->writeMatlab(fileName_Hll.c_str(), true);
+  if (_Hll) 
+    ok3 = _Hpl->writeMatlab(fileName_Hpl.c_str(), false);
+  if (_Hll) 
+    ok4 = _Hschur->writeMatlab(fileName_Hschur.c_str(), true);
+  // TODO(alexmillane): Move this elsewhere
+  //if (_HschurInv)
+  //  io::writeMatlab(fileName_HschurInv.c_str(), *_HschurInv);
 
   // DEBUG(alexmillane)
   std::cout << "Saving hessians to file" << std::endl;
 
-
   // Return
-  return ok1 & ok2 & ok3 & ok4;
+  return ok1 & ok2 & ok3 & ok4 & ok5;
 }
 
 template <typename Traits>
-bool BlockSolver<Traits>::computePoseCovariance()
+bool BlockSolver<Traits>::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
 {
-
-  // DEBUG
-  std::cout << "In pose covariance computation function." << std::endl;
-
   // If not computing by schur's compliment this function will not work.
   if (!_doSchur)
     return false;
 
-
-
-
-  /*
-   * If schur complement is used for solving then the underlying solver is primed
-   * (in terms of decomposition) for working with _Hschur.
-   */
-
-  // Making a sparse identity
-  // NOTE(alexmillane): Not sure if this is best as a sparse block matrix or just 
-  //                    a sparse scalar matrix
-
+  // Deleting the current inverse if it exists already
+/*  if (_HschurInv){
+    delete _HschurInv;
+    _HschurInv=0;
+  }*/
 
   // Retrieving the inverse of the schur compliment matrix
   double t=get_monotonic_time();
-  _linearSolver->solveInverse(*_Hschur);
+  //_HschurInv = new Eigen::MatrixXd(_Hschur->rows(), _Hschur->cols());
+  poseCovariance.resize(_Hschur->rows(), _Hschur->cols());
+  bool success = _linearSolver->solveInverse(*_Hschur, &poseCovariance);
   cerr << "Covariance [whole] = " <<  get_monotonic_time()-t << endl;
 
-  /*
-   * The plan is to make this sparse matrix and then pass it to a new solve function
-   * which will solve for a matrix
-   */
-
-
-  //_Hschur
-
   // Success
-  return true;
+  return success;
 }
 
 } // end namespace

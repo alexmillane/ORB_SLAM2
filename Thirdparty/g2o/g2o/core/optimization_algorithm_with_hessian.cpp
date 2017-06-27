@@ -108,9 +108,9 @@ namespace g2o {
     return _solver ? _solver->saveDebugData(fileNameStart) : false;
   }
 
-  bool OptimizationAlgorithmWithHessian::computePoseCovariance()
+  bool OptimizationAlgorithmWithHessian::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
   {
-    return _solver ? _solver->computePoseCovariance() : false;
+    return _solver ? _solver->computePoseCovariance(poseCovariance) : false;
   }
 
 } // end namespace

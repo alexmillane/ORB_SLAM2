@@ -137,7 +137,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     }
 
 
-    bool solveInverse(const SparseBlockMatrix<MatrixType>& A)
+    bool solveInverse(const SparseBlockMatrix<MatrixType>& A, Eigen::MatrixXd* AInv)
     {
       // DEBUG (alexmillane)
       std::cout << "In alex's solve inverse function." << std::endl;
@@ -148,13 +148,33 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         return false;
       }
 
-      // The identity for the RHS of the inverse equation
+      // Allocating the identity
       int size = A.cols();
       SparseMatrix I(size, size);
       I.setIdentity();
 
-      // Doing the solve
-      _cholesky.solve(I);
+      // DEBUG(alexmillane):
+      // block size for debug
+      //constexpr size_t block_size = 12;
+
+      // Just a sample before
+      //SparseMatrix blockBefore = I.block(0, 0, block_size, block_size);
+      //std::cout << "blockBefore: " << std::endl << blockBefore << std::endl;
+
+      // Doing the solve (in place)
+      // NOTE(alexmillane): In inverting the matrix, all sparsity is lost
+      //SparseMatrix AInvDense(_cholesky.solve(I));
+      *AInv = _cholesky.solve(I);
+
+      // Just a sample before
+      //SparseMatrix blockAfter = AInv.block(0, 0, block_size, block_size);
+      //std::cout << "blockAfter: " << std::endl << blockAfter << std::endl;
+
+      // DEBUG
+      //std::cout << "AInv.rows(): " << *AInv.rows() << std::endl;
+      //std::cout << "AInv.cols(): " << *AInv.cols() << std::endl;
+      //std::cout << "AInv.nonZeros(): " << *AInv.nonZeros() << std::endl;
+
 
       return true;
 

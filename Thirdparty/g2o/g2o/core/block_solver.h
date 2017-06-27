@@ -145,7 +145,7 @@ namespace g2o {
       virtual bool printProblemSize() const;
       virtual bool saveDebugData(const std::string& fileNameStart) const;
       virtual bool saveHessianParts(const std::string& fileNameStart) const;
-      virtual bool computePoseCovariance();
+      virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance);
 
     protected:
       void resize(int* blockPoseIndices, int numPoseBlocks, 
@@ -163,6 +163,10 @@ namespace g2o {
       SparseBlockMatrixCCS<PoseLandmarkMatrixType>* _HplCCS;
       SparseBlockMatrixCCS<PoseMatrixType>* _HschurTransposedCCS;
 
+      // DEBUG(alexmillane)
+      // REMOVEEEEE
+      //Eigen::MatrixXd* _HschurInv;
+
       LinearSolver<PoseMatrixType>* _linearSolver;
 
       std::vector<PoseVectorType, Eigen::aligned_allocator<PoseVectorType> > _diagonalBackupPose;
@@ -179,6 +183,11 @@ namespace g2o {
 
       int _numPoses, _numLandmarks;
       int _sizePoses, _sizeLandmarks;
+
+      // DEBUG(alexmillane)
+      double _t_marginalize_cum;
+      double _t_solve_cum;
+      double _t_landmark_delta_cum;
 
   };
 
