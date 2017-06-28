@@ -69,11 +69,6 @@ namespace g2o {
         cerr << __PRETTY_FUNCTION__ << ": Failure while building CCS structure" << endl;
         return OptimizationAlgorithm::Fail;
       }
-
-      // DEBUG(alexmillane)
-      if(_alexDebug) {
-        printHessianSize();
-      }
     }
 
     double t=get_monotonic_time();

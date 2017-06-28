@@ -98,14 +98,9 @@ namespace g2o {
     _writeDebug->setValue(writeDebug);
   }
 
-  bool OptimizationAlgorithmWithHessian::printHessianSize() const
+  bool OptimizationAlgorithmWithHessian::saveMatricesToFile(const std::string& fileNameStart) const
   {
-    return _solver ? _solver->printProblemSize() : false;
-  }
-
-  bool OptimizationAlgorithmWithHessian::saveDebugData(const std::string& fileNameStart) const
-  {
-    return _solver ? _solver->saveDebugData(fileNameStart) : false;
+    return _solver ? _solver->saveMatricesToFile(fileNameStart) : false;
   }
 
   bool OptimizationAlgorithmWithHessian::computePoseCovariance(Eigen::MatrixXd& poseCovariance)

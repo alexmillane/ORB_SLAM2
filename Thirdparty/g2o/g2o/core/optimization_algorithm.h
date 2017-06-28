@@ -80,8 +80,7 @@ namespace g2o {
       virtual void printVerbose(std::ostream& os) const {(void) os;};
 
       // DEBUG(alexmillane)
-      virtual void setAlexDebug(bool alex_debug);
-      virtual bool saveDebugData(const std::string& fileNameStart) const { return false; }
+      virtual bool saveMatricesToFile(const std::string& fileNameStart) const { return false; }
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
 
      public:
@@ -110,9 +109,6 @@ namespace g2o {
     protected:
       SparseOptimizer* _optimizer;   ///< the optimizer the solver is working on
       PropertyMap _properties;       ///< the properties of your solver, use this to store the parameters of your solver
-
-      // DEBUG(alexmillane)
-      bool _alexDebug;
 
     private:
       // Disable the copy constructor and assignment operator

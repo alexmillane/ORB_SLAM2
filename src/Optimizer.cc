@@ -63,20 +63,15 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     optimizer.setAlgorithm(solver);
 
     // Optimizer iteration information
-    constexpr bool optimizer_verbosity = false;
+    constexpr bool optimizer_verbosity = true;
     optimizer.setVerbose(optimizer_verbosity);
     // Prints Hessian sizes and saves hessians to file.
-    constexpr bool optimizer_alex_debug = false; // true
-    optimizer.setAlexDebug(optimizer_alex_debug);
+    // TODO(alexmillane) Move the save path specification at least up to here.
+    constexpr bool save_matrices_to_file_flag = false;
+    optimizer.saveMatricesToFile(save_matrices_to_file_flag);
     // Prints out linear solver timings per iteration (marinalize, decompose, landmark delta)
     constexpr bool solver_alex_debug = true;
     solver_ptr->setAlexDebug(solver_alex_debug);
-
-    // Computes the pose covariance if requested
-/*    if (pPoseCovariance != nullptr) {
-      optimizer.setComputePoseCovariance(true);
-      optimizer.setPoseCovarianceOutput(*pPoseCovariance);
-    }*/
 
     // Some statistics
     constexpr bool top_level_alex_debug = true;
@@ -258,11 +253,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         }
     }
 
-    // UP TO HEREEEEEEEEEEEEEEEEEEEEEEee
-    // THIS IS ONLY PARTIALLY DONE.
-    // NEEEEED TO MAKE THE MAP.
-    // AND RETURN IT TO THE INTERFACE.
-
+    // Returning the covariances and the associated KF to index map.
     if ((pPoseCovariance != nullptr) && (pKFidToHessianCol != nullptr)) {
         // Getting the pose covariance
         optimizer.computePoseCovariance(*pPoseCovariance);

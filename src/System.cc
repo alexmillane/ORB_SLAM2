@@ -501,9 +501,10 @@ long unsigned int System::getLastKeyFrameID() {
 
 bool System::startGlobalBundleAdjustment() {
   // Starting the global bundle adjustment and subsequent map correction.
-  // UP TO HERE. DO SOMETHING. 
-  // GLOBAL BUNDLE ADJUSTMENT NOW IN THE LOOP CLOSER
-  //void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust, const bool bGetPoseMarginals)
+  // NOTE(alex.millane): I guess the loop closer is the right place for this.
+  mpLoopCloser->RunGlobalBundleAdjustmentWithoutLoop();
+  // Success
+  return true;
 }
 
 }  // namespace ORB_SLAM

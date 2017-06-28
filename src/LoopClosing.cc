@@ -764,13 +764,30 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 
 void LoopClosing::RunGlobalBundleAdjustmentWithoutLoop()
 {
-/*    // Launch a new thread to perform Global Bundle Adjustment
+
+    // NOTE(alex.millane): Starting the bundle adjustment using the last keyframe processes
+    // NOTE(alex.millane): I think that the potential here for race conditions is exceedingly small
+    //                     but possible...
+
+    // Avoid that a keyframe can be erased while it is being process by this thread
+    mpCurrentKF->SetNotErase();
+
+    // Launch a new thread to perform Global Bundle Adjustment
     mbRunningGBA = true;
     mbFinishedGBA = false;
     mbStopGBA = false;
+
+
+    // DEBUG
+    std::cout << "mpCurrentKF->mnId: " << mpCurrentKF->mnId << std::endl;
+
     // TODO(alexmillane): See what this is using the current keyframe for.
     mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this,mpCurrentKF->mnId);
-*/}
+
+    // NOTE(alexmillane): Here the keyframe we triggered the bundle adjustment at will be
+    //                    unerasable. This isn't that clean but on the other hand I don't
+    //                    see any huge performance issue.
+}
 
 void LoopClosing::RequestFinish()
 {

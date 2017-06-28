@@ -132,6 +132,10 @@ namespace g2o {
       virtual bool schur() { return _doSchur;}
       virtual void setSchur(bool s) { _doSchur = s;}
 
+      // DEBUG(alexmillane)
+      // Seperate computation of the schur compliment into a seperate function
+      virtual void updateSchur();
+
       LinearSolver<PoseMatrixType>* linearSolver() const { return _linearSolver;}
 
       virtual void setWriteDebug(bool writeDebug);
@@ -142,9 +146,7 @@ namespace g2o {
       virtual void multiplyHessian(double* dest, const double* src) const { _Hpp->multiplySymmetricUpperTriangle(dest, src);}
 
       // DEBUG(alexmillane)
-      virtual bool printProblemSize() const;
-      virtual bool saveDebugData(const std::string& fileNameStart) const;
-      virtual bool saveHessianParts(const std::string& fileNameStart) const;
+      virtual bool saveMatricesToFile(const std::string& fileNameStart) const;
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance);
 
     protected:

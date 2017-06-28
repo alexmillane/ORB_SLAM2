@@ -1,5 +1,5 @@
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 
 #include "orb_slam_2/Converter.h"
 #include "orb_slam_2/DenseMappingInterface.h"
@@ -23,10 +23,18 @@ void DenseMappingInterface::notifyFinishedGBA() {
   // Sort the keyframes according to their ID
   // TODO(alex.millane:) Do this with a lambda.
   std::sort(vpKFs.begin(), vpKFs.end(), compareKeyframes);
+
+  // DEBUG
+  std::cout << "About to iterate through the keyframes" << std::endl;
+
   // Storing the keyframe poses and timestamps
   mvPoseTrajectory.clear();
   mvPoseTrajectory.reserve(vpKFs.size());
   for (size_t i = 0; i < vpKFs.size(); i++) {
+
+    // DEBUG
+    //std::cout << "Keyframe index: " << i << std::endl;
+
     // Extracting keyframe
     KeyFrame* pKF = vpKFs[i];
     // Extracting and storing pose with ID
@@ -34,21 +42,22 @@ void DenseMappingInterface::notifyFinishedGBA() {
     pose_with_id.pose = pKF->GetPose();
     pose_with_id.timestamp = pKF->mTimeStamp;
     pose_with_id.id = pKF->mnId;
+
+    // DEBUG
+    //std::cout << "pKF->mnId: " << pKF->mnId << std::endl;
+
     // Extracting and storing the covariance if its available
     if (mbUpdatedTrajectoryCovarianceAvailable) {
       auto itKFidToHessianCol = mKFidToHessianCol.find(pKF->mnId);
       if (itKFidToHessianCol != mKFidToHessianCol.end()) {
+
+        // DEBUG
+        //std::cout << "found" << std::endl;
+
         pose_with_id.covarianceValid = true;
         int hessianCol = itKFidToHessianCol->second;
         pose_with_id.covariance =
             mpPoseCovariance->block<6, 6>(hessianCol, hessianCol);
-
-        // DEBUG
-        std::cout << "covariance found for keyframe ID: " << pKF->mnId << std::endl;
-        //std::cout << "covariance: " << pose_with_id.covariance << std::endl;
-      } else {
-        // DEBUG
-        std::cout << "covariance not found for keyframe ID: " << pKF->mnId << std::endl;
       }
     }
     // Storing this pose
@@ -87,19 +96,27 @@ bool DenseMappingInterface::getKeyFrameStatus() {
 }
 
 void DenseMappingInterface::storePoseCovarianceMatrix(
-    const Eigen::MatrixXd& poseCovariance, const std::map<unsigned long, int>& KFidToHessianCol) {
+    const Eigen::MatrixXd& poseCovariance,
+    const std::map<unsigned long, int>& KFidToHessianCol) {
+  // DEBUG 
+  std::cout << "Storing the pose covariance." << std::endl;
+
   // Copy constructor
   // NOTE(alexmillane): Could possibly replace this with a move sometime.
   unique_lock<mutex> lock(mMutexTrajectoryCovariance);
   mpPoseCovariance.reset(new Eigen::MatrixXd(poseCovariance));
-  // Replacing the KF to Hessian collumn map 
+  // Replacing the KF to Hessian collumn map
   mKFidToHessianCol = KFidToHessianCol;
   // Indicating that the covariance is ready
   mbUpdatedTrajectoryCovarianceAvailable = true;
+
+  // DEBUG 
+  std::cout << "Pose covariance stored." << std::endl;
 }
 
-bool DenseMappingInterface::compareKeyframes(KeyFrame* keyframe_1, KeyFrame* keyframe_2) {
-    return (keyframe_1->mnId) < (keyframe_2->mnId);
+bool DenseMappingInterface::compareKeyframes(KeyFrame* keyframe_1,
+                                             KeyFrame* keyframe_2) {
+  return (keyframe_1->mnId) < (keyframe_2->mnId);
 }
 
 }  // namespace ORB_SLAM

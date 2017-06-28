@@ -118,10 +118,6 @@ void BlockSolver<Traits>::deallocate()
     delete _Hschur;
     _Hschur=0;
   }
-/*  if (_HschurInv){
-    delete _HschurInv;
-    _HschurInv=0;
-  }*/
   if (_DInvSchur){
     delete _DInvSchur;
     _DInvSchur=0;
@@ -381,67 +377,9 @@ bool BlockSolver<Traits>::solve(){
   // backup the coefficient matrix
   double t=get_monotonic_time();
 
-  // _Hschur = _Hpp, but keeping the pattern of _Hschur
-  _Hschur->clear();
-  _Hpp->add(_Hschur);
+  // Updating the schur matrix _Hschur by marginalizing out the landmarks
+  updateSchur();
 
-  //_DInvSchur->clear();
-  memset (_coefficients, 0, _sizePoses*sizeof(double));
-# ifdef G2O_OPENMP
-# pragma omp parallel for default (shared) schedule(dynamic, 10)
-# endif
-  for (int landmarkIndex = 0; landmarkIndex < static_cast<int>(_Hll->blockCols().size()); ++landmarkIndex) {
-    const typename SparseBlockMatrix<LandmarkMatrixType>::IntBlockMap& marginalizeColumn = _Hll->blockCols()[landmarkIndex];
-    assert(marginalizeColumn.size() == 1 && "more than one block in _Hll column");
-
-    // calculate inverse block for the landmark
-    const LandmarkMatrixType * D = marginalizeColumn.begin()->second;
-    assert (D && D->rows()==D->cols() && "Error in landmark matrix");
-    LandmarkMatrixType& Dinv = _DInvSchur->diagonal()[landmarkIndex];
-    Dinv = D->inverse();
-
-    LandmarkVectorType  db(D->rows());
-    for (int j=0; j<D->rows(); ++j) {
-      db[j]=_b[_Hll->rowBaseOfBlock(landmarkIndex) + _sizePoses + j];
-    }
-    db=Dinv*db;
-
-    assert((size_t)landmarkIndex < _HplCCS->blockCols().size() && "Index out of bounds");
-    const typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::SparseColumn& landmarkColumn = _HplCCS->blockCols()[landmarkIndex];
-
-    for (typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::SparseColumn::const_iterator it_outer = landmarkColumn.begin();
-        it_outer != landmarkColumn.end(); ++it_outer) {
-      int i1 = it_outer->row;
-
-      const PoseLandmarkMatrixType* Bi = it_outer->block;
-      assert(Bi);
-
-      PoseLandmarkMatrixType BDinv = (*Bi)*(Dinv);
-      assert(_HplCCS->rowBaseOfBlock(i1) < _sizePoses && "Index out of bounds");
-      typename PoseVectorType::MapType Bb(&_coefficients[_HplCCS->rowBaseOfBlock(i1)], Bi->rows());
-#    ifdef G2O_OPENMP
-      ScopedOpenMPMutex mutexLock(&_coefficientsMutex[i1]);
-#    endif
-      Bb.noalias() += (*Bi)*db;
-
-      assert(i1 >= 0 && i1 < static_cast<int>(_HschurTransposedCCS->blockCols().size()) && "Index out of bounds");
-      typename SparseBlockMatrixCCS<PoseMatrixType>::SparseColumn::iterator targetColumnIt = _HschurTransposedCCS->blockCols()[i1].begin();
-
-      typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::RowBlock aux(i1, 0);
-      typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::SparseColumn::const_iterator it_inner = lower_bound(landmarkColumn.begin(), landmarkColumn.end(), aux);
-      for (; it_inner != landmarkColumn.end(); ++it_inner) {
-        int i2 = it_inner->row;
-        const PoseLandmarkMatrixType* Bj = it_inner->block;
-        assert(Bj); 
-        while (targetColumnIt->row < i2 /*&& targetColumnIt != _HschurTransposedCCS->blockCols()[i1].end()*/)
-          ++targetColumnIt;
-        assert(targetColumnIt != _HschurTransposedCCS->blockCols()[i1].end() && targetColumnIt->row == i2 && "invalid iterator, something wrong with the matrix structure");
-        PoseMatrixType* Hi1i2 = targetColumnIt->block;//_Hschur->block(i1,i2);
-        assert(Hi1i2);
-        (*Hi1i2).noalias() -= BDinv*Bj->transpose();
-      }
-    }
-  }
   if (_alexDebug) {
     double marginalize_time = get_monotonic_time()-t;
     cerr << "Solve [marginalize] = " << marginalize_time << endl;
@@ -512,6 +450,71 @@ bool BlockSolver<Traits>::solve(){
   return true;
 }
 
+template <typename Traits>
+void BlockSolver<Traits>::updateSchur()
+{
+  // _Hschur = _Hpp, but keeping the pattern of _Hschur
+  _Hschur->clear();
+  _Hpp->add(_Hschur);
+
+  //_DInvSchur->clear();
+  memset (_coefficients, 0, _sizePoses*sizeof(double));
+# ifdef G2O_OPENMP
+# pragma omp parallel for default (shared) schedule(dynamic, 10)
+# endif
+  for (int landmarkIndex = 0; landmarkIndex < static_cast<int>(_Hll->blockCols().size()); ++landmarkIndex) {
+    const typename SparseBlockMatrix<LandmarkMatrixType>::IntBlockMap& marginalizeColumn = _Hll->blockCols()[landmarkIndex];
+    assert(marginalizeColumn.size() == 1 && "more than one block in _Hll column");
+
+    // calculate inverse block for the landmark
+    const LandmarkMatrixType * D = marginalizeColumn.begin()->second;
+    assert (D && D->rows()==D->cols() && "Error in landmark matrix");
+    LandmarkMatrixType& Dinv = _DInvSchur->diagonal()[landmarkIndex];
+    Dinv = D->inverse();
+
+    LandmarkVectorType  db(D->rows());
+    for (int j=0; j<D->rows(); ++j) {
+      db[j]=_b[_Hll->rowBaseOfBlock(landmarkIndex) + _sizePoses + j];
+    }
+    db=Dinv*db;
+
+    assert((size_t)landmarkIndex < _HplCCS->blockCols().size() && "Index out of bounds");
+    const typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::SparseColumn& landmarkColumn = _HplCCS->blockCols()[landmarkIndex];
+
+    for (typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::SparseColumn::const_iterator it_outer = landmarkColumn.begin();
+        it_outer != landmarkColumn.end(); ++it_outer) {
+      int i1 = it_outer->row;
+
+      const PoseLandmarkMatrixType* Bi = it_outer->block;
+      assert(Bi);
+
+      PoseLandmarkMatrixType BDinv = (*Bi)*(Dinv);
+      assert(_HplCCS->rowBaseOfBlock(i1) < _sizePoses && "Index out of bounds");
+      typename PoseVectorType::MapType Bb(&_coefficients[_HplCCS->rowBaseOfBlock(i1)], Bi->rows());
+#    ifdef G2O_OPENMP
+      ScopedOpenMPMutex mutexLock(&_coefficientsMutex[i1]);
+#    endif
+      Bb.noalias() += (*Bi)*db;
+
+      assert(i1 >= 0 && i1 < static_cast<int>(_HschurTransposedCCS->blockCols().size()) && "Index out of bounds");
+      typename SparseBlockMatrixCCS<PoseMatrixType>::SparseColumn::iterator targetColumnIt = _HschurTransposedCCS->blockCols()[i1].begin();
+
+      typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::RowBlock aux(i1, 0);
+      typename SparseBlockMatrixCCS<PoseLandmarkMatrixType>::SparseColumn::const_iterator it_inner = lower_bound(landmarkColumn.begin(), landmarkColumn.end(), aux);
+      for (; it_inner != landmarkColumn.end(); ++it_inner) {
+        int i2 = it_inner->row;
+        const PoseLandmarkMatrixType* Bj = it_inner->block;
+        assert(Bj); 
+        while (targetColumnIt->row < i2 /*&& targetColumnIt != _HschurTransposedCCS->blockCols()[i1].end()*/)
+          ++targetColumnIt;
+        assert(targetColumnIt != _HschurTransposedCCS->blockCols()[i1].end() && targetColumnIt->row == i2 && "invalid iterator, something wrong with the matrix structure");
+        PoseMatrixType* Hi1i2 = targetColumnIt->block;//_Hschur->block(i1,i2);
+        assert(Hi1i2);
+        (*Hi1i2).noalias() -= BDinv*Bj->transpose();
+      }
+    }
+  }  
+}
 
 template <typename Traits>
 bool BlockSolver<Traits>::computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices)
@@ -658,62 +661,25 @@ bool BlockSolver<Traits>::saveHessian(const std::string& fileName) const
   return _Hpp->writeOctave(fileName.c_str(), true);
 }
 
-
 template <typename Traits>
-bool BlockSolver<Traits>::printProblemSize() const
-{
-
-  // Printing out the matrices sizes
-  std::cout << "_Hpp->cols(): " << _Hpp->cols() << std::endl;
-  std::cout << "_Hpp->rows(): " << _Hpp->rows() << std::endl;
-  std::cout << "_Hpp->nonZeros(): " << _Hpp->nonZeros() << std::endl;
-  std::cout << "_Hpp->nonZeroBlocks(): " << _Hpp->nonZeroBlocks() << std::endl;
-
-  std::cout << "_Hll->cols(): " << _Hll->cols() << std::endl;
-  std::cout << "_Hll->rows(): " << _Hll->rows() << std::endl;
-  std::cout << "_Hll->nonZeros(): " << _Hll->nonZeros() << std::endl;
-  std::cout << "_Hll->nonZeroBlocks(): " << _Hll->nonZeroBlocks() << std::endl;
-
-  std::cout << "_Hpl->cols(): " << _Hpl->cols() << std::endl;
-  std::cout << "_Hpl->rows(): " << _Hpl->rows() << std::endl;
-  std::cout << "_Hpl->nonZeros(): " << _Hpl->nonZeros() << std::endl;
-  std::cout << "_Hpl->nonZeroBlocks(): " << _Hpl->nonZeroBlocks() << std::endl;
-
-  // The schur compliment matrix
-  std::cout << "_Hschur->cols(): " << _Hschur->cols() << std::endl;
-  std::cout << "_Hschur->rows(): " << _Hschur->rows() << std::endl;
-  std::cout << "_Hschur->nonZeros(): " << _Hschur->nonZeros() << std::endl;
-  std::cout << "_Hschur->nonZeroBlocks(): " << _Hschur->nonZeroBlocks() << std::endl;
-  
-}
-
-template <typename Traits>
-bool BlockSolver<Traits>::saveDebugData(const std::string& fileNameStart) const
-{
-  return saveHessianParts(fileNameStart);
-}
-
-
-template <typename Traits>
-bool BlockSolver<Traits>::saveHessianParts(const std::string& fileNameStart) const
+bool BlockSolver<Traits>::saveMatricesToFile(const std::string& fileNameStart) const
 {
 
   // DEBUG(alexmillane)
   std::cout << "Saving hessians to file" << std::endl;
+  std::cout << "Filename: " << fileNameStart << std::endl;
 
   // Filenames
   std::string fileName_Hpp(fileNameStart + "_Hpp");
   std::string fileName_Hll(fileNameStart + "_Hll");
   std::string fileName_Hpl(fileNameStart + "_Hpl");
   std::string fileName_Hschur(fileNameStart + "_Hschur");
-//  std::string fileName_HschurInv(fileNameStart + "_HschurInv");
 
   // Writing
   bool ok1 = true;
   bool ok2 = true;
   bool ok3 = true;
   bool ok4 = true;
-  bool ok5 = true;
   if(_Hpp)
     ok1 = _Hpp->writeMatlab(fileName_Hpp.c_str(), true);
   if (_Hll) 
@@ -722,15 +688,9 @@ bool BlockSolver<Traits>::saveHessianParts(const std::string& fileNameStart) con
     ok3 = _Hpl->writeMatlab(fileName_Hpl.c_str(), false);
   if (_Hll) 
     ok4 = _Hschur->writeMatlab(fileName_Hschur.c_str(), true);
-  // TODO(alexmillane): Move this elsewhere
-  //if (_HschurInv)
-  //  io::writeMatlab(fileName_HschurInv.c_str(), *_HschurInv);
-
-  // DEBUG(alexmillane)
-  std::cout << "Saving hessians to file" << std::endl;
 
   // Return
-  return ok1 & ok2 & ok3 & ok4 & ok5;
+  return ok1 & ok2 & ok3 & ok4;
 }
 
 template <typename Traits>
@@ -740,17 +700,20 @@ bool BlockSolver<Traits>::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
   if (!_doSchur)
     return false;
 
-  // Deleting the current inverse if it exists already
-/*  if (_HschurInv){
-    delete _HschurInv;
-    _HschurInv=0;
-  }*/
+  // Timing
+  double t=get_monotonic_time();
+
+  // Restoring the diagonal in case Levenberg has fucked with it
+  restoreDiagonal();
+
+  // Recomputing the schur compliment with the original diagonal
+  updateSchur();
 
   // Retrieving the inverse of the schur compliment matrix
-  double t=get_monotonic_time();
-  //_HschurInv = new Eigen::MatrixXd(_Hschur->rows(), _Hschur->cols());
   poseCovariance.resize(_Hschur->rows(), _Hschur->cols());
   bool success = _linearSolver->solveInverse(*_Hschur, &poseCovariance);
+
+  // Timing
   cerr << "Covariance [whole] = " <<  get_monotonic_time()-t << endl;
 
   // Success

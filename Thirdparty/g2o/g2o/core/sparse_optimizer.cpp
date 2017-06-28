@@ -48,7 +48,7 @@ namespace g2o{
 
 
   SparseOptimizer::SparseOptimizer() :
-    _forceStopFlag(0), _verbose(false), _algorithm(0), _computeBatchStatistics(false), _alexDebug(false)
+    _forceStopFlag(0), _verbose(false), _algorithm(0), _computeBatchStatistics(false), _saveMatricesToFile(false)
   {
     _graphActions.resize(AT_NUM_ELEMENTS);
   }
@@ -419,18 +419,12 @@ namespace g2o{
     }
 
     // DEBUG(alexmillane).
-    // Calculating the pose covariance
-/*    if (_computePoseCovariance && _poseCovarianceDestinationSet) {
-      _algorithm->computePoseCovariance(*_poseCovariance);
-    }
-*/
-    // DEBUG(alexmillane).
     // Saving the Hessians
-    if (_alexDebug) {
+    if (_saveMatricesToFile) {
       const static std::string hessianDebugFilePathStart =
           "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
           "covariance/hessian";
-      _algorithm->saveDebugData(hessianDebugFilePathStart);
+      _algorithm->saveMatricesToFile(hessianDebugFilePathStart);
     }
 
     return cjIterations;
@@ -576,10 +570,9 @@ namespace g2o{
     _verbose = verbose;
   }
 
-  void SparseOptimizer::setAlexDebug(bool alexDebug)
+  void SparseOptimizer::saveMatricesToFile(bool saveMatricesToFile)
   {
-    _algorithm->setAlexDebug(alexDebug);
-    _alexDebug = alexDebug;
+    _saveMatricesToFile = saveMatricesToFile;
   }
 
   bool SparseOptimizer::computePoseCovariance(MatrixXd& poseCovariance) {

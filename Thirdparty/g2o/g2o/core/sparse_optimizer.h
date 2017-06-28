@@ -179,10 +179,8 @@ namespace g2o {
     void setVerbose(bool verbose);
 
     // DEBUG(alexmillane)
-    void setAlexDebug(bool alexDebug);
-    // Depricated
-    //void setComputePoseCovariance(bool computePoseCovariance) {_computePoseCovariance = computePoseCovariance;}
-    //void setPoseCovarianceOutput(MatrixXd& poseCovariance);
+    void saveMatricesToFile(bool save_matrices_to_file);
+    // Computes the pose covariance
     bool computePoseCovariance(MatrixXd& poseCovariance);
 
     /**
@@ -315,10 +313,8 @@ namespace g2o {
     bool _computeBatchStatistics;
 
     //DEBUG(alexmillane)
-    bool _alexDebug;
-    //bool _computePoseCovariance;
-    //MatrixXd* _poseCovariance;
-    //bool _poseCovarianceDestinationSet;
+    // Flag indicating that matrices should be saved to file.
+    bool _saveMatricesToFile;
 
   };
 } // end namespace

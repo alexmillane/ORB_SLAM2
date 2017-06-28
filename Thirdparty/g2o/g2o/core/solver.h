@@ -133,9 +133,8 @@ namespace g2o {
 
       // DEBUG(alexmillane)
       // These functions are implemented by (some) inherited classes
-      virtual bool printProblemSize() const { return false; }
       virtual void setAlexDebug(bool alexDebug) {_alexDebug = alexDebug;}
-      virtual bool saveDebugData(const std::string& fileNameStart ) const { return false; }
+      virtual bool saveMatricesToFile(const std::string& fileNameStart ) const { return false; }
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
 
      protected:
