@@ -179,7 +179,8 @@ namespace g2o {
     void setVerbose(bool verbose);
 
     // DEBUG(alexmillane)
-    void saveMatricesToFile(bool save_matrices_to_file);
+    // Saves the Hessian matrices from the solver to file.
+    void saveHessiansToFile(const std::string& filePath);
     // Computes the pose covariance
     bool computePoseCovariance(MatrixXd& poseCovariance);
 
@@ -311,10 +312,6 @@ namespace g2o {
 
     BatchStatisticsContainer _batchStatistics;   ///< global statistics of the optimizer, e.g., timing, num-non-zeros
     bool _computeBatchStatistics;
-
-    //DEBUG(alexmillane)
-    // Flag indicating that matrices should be saved to file.
-    bool _saveMatricesToFile;
 
   };
 } // end namespace

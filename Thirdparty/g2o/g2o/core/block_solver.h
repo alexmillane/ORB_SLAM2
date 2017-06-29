@@ -146,7 +146,7 @@ namespace g2o {
       virtual void multiplyHessian(double* dest, const double* src) const { _Hpp->multiplySymmetricUpperTriangle(dest, src);}
 
       // DEBUG(alexmillane)
-      virtual bool saveMatricesToFile(const std::string& fileNameStart) const;
+      virtual bool saveHessiansToFile(const std::string& fileNameStart) const;
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance);
 
     protected:
@@ -164,10 +164,6 @@ namespace g2o {
 
       SparseBlockMatrixCCS<PoseLandmarkMatrixType>* _HplCCS;
       SparseBlockMatrixCCS<PoseMatrixType>* _HschurTransposedCCS;
-
-      // DEBUG(alexmillane)
-      // REMOVEEEEE
-      //Eigen::MatrixXd* _HschurInv;
 
       LinearSolver<PoseMatrixType>* _linearSolver;
 

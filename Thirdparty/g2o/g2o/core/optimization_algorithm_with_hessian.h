@@ -62,7 +62,7 @@ namespace g2o {
       virtual bool writeDebug() const { return _writeDebug->value();}
 
       // DEBUG(alexmillane)
-      virtual bool saveMatricesToFile(const std::string& fileNameStart) const;
+      virtual bool saveHessiansToFile(const std::string& fileNameStart) const;
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance);
 
     protected:

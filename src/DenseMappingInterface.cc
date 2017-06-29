@@ -23,18 +23,10 @@ void DenseMappingInterface::notifyFinishedGBA() {
   // Sort the keyframes according to their ID
   // TODO(alex.millane:) Do this with a lambda.
   std::sort(vpKFs.begin(), vpKFs.end(), compareKeyframes);
-
-  // DEBUG
-  std::cout << "About to iterate through the keyframes" << std::endl;
-
   // Storing the keyframe poses and timestamps
   mvPoseTrajectory.clear();
   mvPoseTrajectory.reserve(vpKFs.size());
   for (size_t i = 0; i < vpKFs.size(); i++) {
-
-    // DEBUG
-    //std::cout << "Keyframe index: " << i << std::endl;
-
     // Extracting keyframe
     KeyFrame* pKF = vpKFs[i];
     // Extracting and storing pose with ID
@@ -42,18 +34,10 @@ void DenseMappingInterface::notifyFinishedGBA() {
     pose_with_id.pose = pKF->GetPose();
     pose_with_id.timestamp = pKF->mTimeStamp;
     pose_with_id.id = pKF->mnId;
-
-    // DEBUG
-    //std::cout << "pKF->mnId: " << pKF->mnId << std::endl;
-
     // Extracting and storing the covariance if its available
     if (mbUpdatedTrajectoryCovarianceAvailable) {
       auto itKFidToHessianCol = mKFidToHessianCol.find(pKF->mnId);
-      if (itKFidToHessianCol != mKFidToHessianCol.end()) {
-
-        // DEBUG
-        //std::cout << "found" << std::endl;
-
+      if ((itKFidToHessianCol != mKFidToHessianCol.end()) && (i != 0)) {
         pose_with_id.covarianceValid = true;
         int hessianCol = itKFidToHessianCol->second;
         pose_with_id.covariance =

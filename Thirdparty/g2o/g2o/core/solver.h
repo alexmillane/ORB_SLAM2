@@ -133,8 +133,8 @@ namespace g2o {
 
       // DEBUG(alexmillane)
       // These functions are implemented by (some) inherited classes
-      virtual void setAlexDebug(bool alexDebug) {_alexDebug = alexDebug;}
-      virtual bool saveMatricesToFile(const std::string& fileNameStart ) const { return false; }
+      virtual void setVerbose(bool verbose) {_verbose = verbose;}
+      virtual bool saveHessiansToFile(const std::string& fileNameStart ) const { return false; }
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
 
      protected:
@@ -148,7 +148,7 @@ namespace g2o {
       void resizeVector(size_t sx);
 
       // DEBUG(alexmillane)
-      bool _alexDebug;
+      bool _verbose;
 
     private:
       // Disable the copy constructor and assignment operator

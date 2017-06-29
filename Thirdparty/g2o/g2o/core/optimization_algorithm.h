@@ -80,7 +80,7 @@ namespace g2o {
       virtual void printVerbose(std::ostream& os) const {(void) os;};
 
       // DEBUG(alexmillane)
-      virtual bool saveMatricesToFile(const std::string& fileNameStart) const { return false; }
+      virtual bool saveHessiansToFile(const std::string& fileNameStart) const { return false; }
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
 
      public:

@@ -63,7 +63,7 @@ BlockSolver<Traits>::BlockSolver(LinearSolverType* linearSolver) :
   _sizePoses=0;
   _sizeLandmarks=0;
   _doSchur=true;
-  _alexDebug = false;
+  _verbose= false;
   _t_marginalize_cum = 0.0;
   _t_solve_cum = 0.0;
   _t_landmark_delta_cum = 0.0;
@@ -380,7 +380,7 @@ bool BlockSolver<Traits>::solve(){
   // Updating the schur matrix _Hschur by marginalizing out the landmarks
   updateSchur();
 
-  if (_alexDebug) {
+  if (_verbose) {
     double marginalize_time = get_monotonic_time()-t;
     cerr << "Solve [marginalize] = " << marginalize_time << endl;
     _t_marginalize_cum += marginalize_time;
@@ -406,7 +406,7 @@ bool BlockSolver<Traits>::solve(){
     globalStats->hessianLandmarkDimension = _Hll->cols();
     globalStats->hessianDimension = globalStats->hessianPoseDimension + globalStats->hessianLandmarkDimension;
   }
-  if (_alexDebug) {
+  if (_verbose) {
     double solve_time = get_monotonic_time()-t;
     cerr << "Solve [decompose and solve] = " <<  solve_time << endl;
     _t_solve_cum += solve_time;
@@ -440,7 +440,7 @@ bool BlockSolver<Traits>::solve(){
   memset(xl,0, _sizeLandmarks*sizeof(double));
   _DInvSchur->multiply(xl,cl);
   //_DInvSchur->rightMultiply(xl,cl);
-  if (_alexDebug) {
+  if (_verbose) {
     double landmark_delta_time = get_monotonic_time()-t;
     cerr << "Solve [landmark delta] = " <<  landmark_delta_time << endl;
     _t_landmark_delta_cum += landmark_delta_time;
@@ -662,7 +662,7 @@ bool BlockSolver<Traits>::saveHessian(const std::string& fileName) const
 }
 
 template <typename Traits>
-bool BlockSolver<Traits>::saveMatricesToFile(const std::string& fileNameStart) const
+bool BlockSolver<Traits>::saveHessiansToFile(const std::string& fileNameStart) const
 {
 
   // DEBUG(alexmillane)
@@ -699,23 +699,19 @@ bool BlockSolver<Traits>::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
   // If not computing by schur's compliment this function will not work.
   if (!_doSchur)
     return false;
-
   // Timing
   double t=get_monotonic_time();
-
   // Restoring the diagonal in case Levenberg has fucked with it
   restoreDiagonal();
-
   // Recomputing the schur compliment with the original diagonal
   updateSchur();
-
+  // Timing
+  cerr << "Covariance [schur] = " <<  get_monotonic_time()-t << endl;
   // Retrieving the inverse of the schur compliment matrix
   poseCovariance.resize(_Hschur->rows(), _Hschur->cols());
   bool success = _linearSolver->solveInverse(*_Hschur, &poseCovariance);
-
   // Timing
   cerr << "Covariance [whole] = " <<  get_monotonic_time()-t << endl;
-
   // Success
   return success;
 }

@@ -48,7 +48,7 @@ namespace g2o{
 
 
   SparseOptimizer::SparseOptimizer() :
-    _forceStopFlag(0), _verbose(false), _algorithm(0), _computeBatchStatistics(false), _saveMatricesToFile(false)
+    _forceStopFlag(0), _verbose(false), _algorithm(0), _computeBatchStatistics(false)
   {
     _graphActions.resize(AT_NUM_ELEMENTS);
   }
@@ -418,15 +418,6 @@ namespace g2o{
       return 0;
     }
 
-    // DEBUG(alexmillane).
-    // Saving the Hessians
-    if (_saveMatricesToFile) {
-      const static std::string hessianDebugFilePathStart =
-          "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
-          "covariance/hessian";
-      _algorithm->saveMatricesToFile(hessianDebugFilePathStart);
-    }
-
     return cjIterations;
   }
 
@@ -570,9 +561,11 @@ namespace g2o{
     _verbose = verbose;
   }
 
-  void SparseOptimizer::saveMatricesToFile(bool saveMatricesToFile)
+  void SparseOptimizer::saveHessiansToFile(const std::string& filePath)
   {
-    _saveMatricesToFile = saveMatricesToFile;
+    // Saving the Hessians
+    if (_algorithm)
+      _algorithm->saveHessiansToFile(filePath);
   }
 
   bool SparseOptimizer::computePoseCovariance(MatrixXd& poseCovariance) {

@@ -63,19 +63,15 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     optimizer.setAlgorithm(solver);
 
     // Optimizer iteration information
-    constexpr bool optimizer_verbosity = true;
-    optimizer.setVerbose(optimizer_verbosity);
-    // Prints Hessian sizes and saves hessians to file.
-    // TODO(alexmillane) Move the save path specification at least up to here.
-    constexpr bool save_matrices_to_file_flag = false;
-    optimizer.saveMatricesToFile(save_matrices_to_file_flag);
+    constexpr bool optimizerVerbose = true;
+    optimizer.setVerbose(optimizerVerbose);
     // Prints out linear solver timings per iteration (marinalize, decompose, landmark delta)
-    constexpr bool solver_alex_debug = true;
-    solver_ptr->setAlexDebug(solver_alex_debug);
+    constexpr bool solverVerbose = true;
+    solver_ptr->setVerbose(solverVerbose);
 
     // Some statistics
-    constexpr bool top_level_alex_debug = true;
-    if (top_level_alex_debug) {
+    constexpr bool topLevelVerbose = true;
+    if (topLevelVerbose) {
       std::cout << "Starting new optimization" << std::endl;
       std::cout << "--------------------------------------------------" << std::endl;
       std::cout << "vpKFs.size(): " << vpKFs.size() << std::endl;
@@ -253,11 +249,21 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         }
     }
 
+    // Saving the hessians for file
+    constexpr bool saveHessiansToFile = true;
+    if (saveHessiansToFile) {
+      const static std::string hessianFilePathStart =
+          "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+          "covariance/hessian";
+      optimizer.saveHessiansToFile(hessianFilePathStart);
+    }
+
     // Returning the covariances and the associated KF to index map.
     if ((pPoseCovariance != nullptr) && (pKFidToHessianCol != nullptr)) {
         // Getting the pose covariance
         optimizer.computePoseCovariance(*pPoseCovariance);
         // Creating the keyframe ID to hessian index map
+        // NOTE(alexmillane): Size of the hessian block not included here for simplicity
         //std::map<unsigned long, std::pair<int,int>> mKFidToHessianColAndSize;
         //std::map<unsigned long, int> mKFidToHessianCol;
         for(size_t i=0; i<vpKFs.size(); i++)
@@ -269,6 +275,18 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             g2o::OptimizableGraph::Vertex* vertex = optimizer.vertex(pKF->mnId);
             //mKFidToHessianColAndSize[pKF->mnId] = std::pair<int,int>(vertex->colInHessian(), vertex->dimension());
             (*pKFidToHessianCol)[pKF->mnId] = vertex->colInHessian();
+        }
+
+        // Saving the covariance matrix to file if requested
+        constexpr bool saveCovarianceToFile = true;
+        if (saveCovarianceToFile) {
+            //DEBUG
+            std::cout << "Saving the pose covariance to file" << std::endl;
+            // Saving
+            const static std::string covarianceFilePath =
+              "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+              "covariance/pose_covariance";
+            g2o::io::writeMatlab(covarianceFilePath.c_str(), *pPoseCovariance);
         }
     }
 }
@@ -739,39 +757,6 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     }
 
     // Optimize again without the outliers
-
-
-    // DEBUG(alexmillane): Setting the optimizer verbose to get some feedback
-    /********************************************
-     * UP TO HERE!!!
-     ********************************************/
-
-/*    // Optimizer iteration information
-    constexpr bool optimizer_verbosity = false;
-    optimizer.setVerbose(optimizer_verbosity);
-    // Prints Hessian sizes and saves hessians to file.
-    constexpr bool optimizer_alex_debug = false;
-    optimizer.setAlexDebug(optimizer_alex_debug);
-    // Prints out linear solver timings per iteration (marinalize, decompose, landmark delta)
-    constexpr bool solver_alex_debug = true;
-    solver_ptr->setAlexDebug(solver_alex_debug);
-    // Computes the pose covariance.
-    constexpr bool compute_pose_covariance = true;
-    optimizer.setComputePoseCovariance(compute_pose_covariance);
-
-    // Some statistics
-    constexpr bool top_level_alex_debug = true;
-    if (top_level_alex_debug) {
-      std::cout << "Starting new optimization" << std::endl;
-      std::cout << "--------------------------------------------------" << std::endl;
-      std::cout << "lLocalKeyFrames.size(): " << lLocalKeyFrames.size() << std::endl;
-      std::cout << "lLocalMapPoints.size(): " << lLocalMapPoints.size() << std::endl;
-      std::cout << "lFixedCameras.size(): " << lFixedCameras.size() << std::endl;
-    }
-*/
-
-    // DEBUG(alexmillane): Actually doing the optimization
-
     optimizer.initializeOptimization(0);
     optimizer.optimize(10);
 
