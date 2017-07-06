@@ -507,4 +507,38 @@ bool System::startGlobalBundleAdjustment() {
   return true;
 }
 
+bool System::addKeyframeAsPatchBaseframe(unsigned long KFid) {
+  return mpDenseMappingInterface->addKeyframeAsPatchBaseframe(KFid);
+}
+
+void System::removeAllKeyframesAsPatchBaseFrames() {
+  return mpDenseMappingInterface->removeAllKeyframesAsPatchBaseFrames();
+}
+
+void System::getCurrentKeyframeIds(std::vector<unsigned long> *KFids) {
+  // Getting the keyframes forming the map
+  std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+  // Sort the keyframes according to their ID
+  // DEBUG(alexmillane): I assume the caller wants sorted frames.
+  std::sort(vpKFs.begin(), vpKFs.end(),
+            [](KeyFrame const* kf1, KeyFrame const* kf2) {
+              return (kf1->mnId) < (kf2->mnId);
+            });
+  // Storing the keyframe ids
+  KFids->clear();
+  KFids->reserve(vpKFs.size());
+  for (KeyFrame* pKF : vpKFs) {
+    KFids->push_back(pKF->mnId);
+  }
+}
+
+bool System::getPatchBaseFramePosesAndCovariances(
+    std::vector<cv::Mat> *patchPoses,
+    std::vector<Eigen::Matrix<double, 6, 6>,
+                Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>>
+        *patchConditionalCovariances) {
+  return mpDenseMappingInterface->getPatchBaseFramePosesAndCovariances(
+      *patchPoses, *patchConditionalCovariances);
+}
+
 }  // namespace ORB_SLAM

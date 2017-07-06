@@ -129,11 +129,11 @@ class System {
   std::vector<MapPoint*> GetTrackedMapPoints();
   std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
+  // DEBUG(alexmillane): Functions below are mine
+
   // Functions related to trajectory publishing
   bool isUpdatedTrajectoryAvailable();
   std::vector<PoseWithID> GetUpdatedTrajectory();
-  //bool isUpdatedTrajectoryWithCovarianceAvailable();
-
 
   // Functions related to trajectory publishing
   bool isKeyFrameStatusAvailable();
@@ -144,6 +144,19 @@ class System {
 
   // Kicks off global bundle adjustment
   bool startGlobalBundleAdjustment();
+
+  // Functions to do with patch base frames (direct feedthrough to dense mapping interface).
+  bool addKeyframeAsPatchBaseframe(unsigned long KFid);
+  bool getPatchBaseFramePosesAndCovariances(
+      std::vector<cv::Mat>* patchPoses,
+      std::vector<Eigen::Matrix<double, 6, 6>,
+                  Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>>*
+          patchConditionalCovariances);
+
+  // DEBUG(alexmillane)
+  // THESE ARE LIKELY ONLY NEEDED FOR TESTING
+  void removeAllKeyframesAsPatchBaseFrames();
+  void getCurrentKeyframeIds(std::vector<unsigned long>* KFids);
 
  private:
   // Input sensor
