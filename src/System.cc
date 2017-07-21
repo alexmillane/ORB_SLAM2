@@ -487,14 +487,6 @@ std::vector<PoseWithID> System::GetUpdatedTrajectory() {
   return mpDenseMappingInterface->getUpdatedTrajectory();
 }
 
-bool System::isKeyFrameStatusAvailable() {
-  return mpDenseMappingInterface->isKeyFrameStatusAvailable();
-}
-
-bool System::getKeyFrameStatus() {
-  return mpDenseMappingInterface->getKeyFrameStatus();
-}
-
 long unsigned int System::getLastKeyFrameID() {
   return mpTracker->getLastKeyFrameID();
 }

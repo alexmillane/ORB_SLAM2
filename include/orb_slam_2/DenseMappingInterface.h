@@ -36,11 +36,11 @@ class DenseMappingInterface {
   bool isUpdatedTrajectoryAvailable();
   std::vector<PoseWithID> getUpdatedTrajectory();
 
-  // Tells interface if the last frame was a keyframe
+/*  // Tells interface if the last frame was a keyframe
   void notifyKeyFrameStatusAvailable(bool keyframe_flag);
   // Functions for getting last keyframe status
   bool isKeyFrameStatusAvailable();
-  bool getKeyFrameStatus();
+  bool getKeyFrameStatus();*/
 
   // Stores the covariance matrix in the interface for external reading
   void storePoseCovarianceMatrix(

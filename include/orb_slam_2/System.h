@@ -135,10 +135,6 @@ class System {
   bool isUpdatedTrajectoryAvailable();
   std::vector<PoseWithID> GetUpdatedTrajectory();
 
-  // Functions related to trajectory publishing
-  bool isKeyFrameStatusAvailable();
-  bool getKeyFrameStatus();
-
   // Returns the last frame 
   long unsigned int getLastKeyFrameID();
 

@@ -63,7 +63,7 @@ std::vector<PoseWithID> DenseMappingInterface::getUpdatedTrajectory() {
   return mvPoseTrajectory;
 }
 
-void DenseMappingInterface::notifyKeyFrameStatusAvailable(bool keyframe_flag) {
+/*void DenseMappingInterface::notifyKeyFrameStatusAvailable(bool keyframe_flag) {
   // Saving the keyframe status
   mbKeyFrameStatus = keyframe_flag;
   // Indicating a new status is available
@@ -77,7 +77,7 @@ bool DenseMappingInterface::getKeyFrameStatus() {
   unique_lock<mutex> lock(mMutexKeyFrameStatus);
   mbKeyFrameStatusAvailable = false;
   return mbKeyFrameStatus;
-}
+}*/
 
 void DenseMappingInterface::storePoseCovarianceMatrix(
     const Eigen::MatrixXd& poseCovariance,

@@ -25,6 +25,8 @@ if(MSVC90)
   message(STATUS "Disabling memory alignment for MSVC8")
 endif(MSVC90)
 
+#add_definitions(-DEIGEN_DONT_ALIGN_STATICALLY)
+
 # Set the output directory for the build executables and libraries
 #IF(WIN32)
 #  SET(g2o_LIBRARY_OUTPUT_DIRECTORY ${g2o_ROOT_DIR}/bin CACHE PATH "Target for the libraries")
