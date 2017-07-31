@@ -154,6 +154,10 @@ class System {
   void removeAllKeyframesAsPatchBaseFrames();
   void getCurrentKeyframeIds(std::vector<unsigned long>* KFids);
 
+  // Gets the poses of a list of keyframes
+  bool getKeyframePosesById(const std::vector<unsigned long>& KFids,
+                            std::vector<cv::Mat>* KFposes);
+
  private:
   // Input sensor
   eSensor mSensor;
