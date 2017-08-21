@@ -28,6 +28,8 @@
 
 #include <Eigen/StdVector>
 
+#include "g2o/core/sparse_optimizer.h"
+
 #include "orb_slam_2/DenseMappingInterface.h"
 #include "orb_slam_2/FrameDrawer.h"
 #include "orb_slam_2/KeyFrameDatabase.h"
@@ -130,7 +132,8 @@ class System {
   std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
   // DEBUG(alexmillane): Functions below are mine
-
+  // ----------------------------------------------------------------
+  
   // Functions related to trajectory publishing
   bool isUpdatedTrajectoryAvailable();
   std::vector<PoseWithID> GetUpdatedTrajectory();
@@ -142,6 +145,7 @@ class System {
   bool startGlobalBundleAdjustment();
 
   // Functions to do with patch base frames (direct feedthrough to dense mapping interface).
+  // TODO(alexmillane): THESE SHOULD BE REMOVED WHEN FUNCTIONALITY MOVES TO THE MAP MAINTAINER
   bool addKeyframeAsPatchBaseframe(unsigned long KFid);
   bool getPatchBaseFramePosesAndCovariances(
       std::vector<cv::Mat>* patchPoses,
@@ -154,9 +158,13 @@ class System {
   void removeAllKeyframesAsPatchBaseFrames();
   void getCurrentKeyframeIds(std::vector<unsigned long>* KFids);
 
-  // Gets the poses of a list of keyframes
+  // Keyframe interactions
+  void getKeyFrames(std::vector<KeyFrame*>* pKFs);
   bool getKeyframePosesById(const std::vector<unsigned long>& KFids,
                             std::vector<cv::Mat>* KFposes);
+
+  // Gets the g2o optimizer object used in the last Global Bundle Adjustment
+  std::shared_ptr<g2o::SparseOptimizer> getLastGBAOptimizer();
 
  private:
   // Input sensor

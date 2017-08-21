@@ -136,7 +136,6 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       return true;
     }
 
-
     bool solveInverse(const SparseBlockMatrix<MatrixType>& A, Eigen::MatrixXd* AInv)
     {
       // DEBUG (alexmillane)
@@ -180,6 +179,37 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
 
     }
 
+    // TODO(alexmillane): This mean that the above classes need the concept of an eigen sparse matrix.. Not good.
+    bool getCholeskyFactor(const SparseBlockMatrix<MatrixType>& A, Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr) {
+      // DEBUG (alexmillane)
+      std::cout << "Getting cholesky factor." << std::endl;
+
+      // Factorize
+      double t;
+      if (!preSolve(A, &t)) {
+        return false;
+      }
+
+      //
+      //typename CholeskyDecomposition::CholMatrixType mat_test;
+      //CholeskyDecomposition::internal::MatrixL ;
+/*      Eigen::TriangularView<
+          const typename CholeskyDecomposition::CholMatrixType, Eigen::Lower>
+          tri_test = _cholesky.matrixL();
+*/
+      //auto tri_test = _cholesky.matrixL();
+
+
+      //typename CholeskyDecomposition::CholMatrixType full_factor = _cholesky.matrixL();
+
+      // DEBUG WRITTING TO FILE
+//      *factor_ptr = _cholesky.matrixL();
+      *factor_ptr = _cholesky.matrixU().transpose();
+
+      //selfadjointView<Eigen::Upper>()
+
+    }
+
 
 
     //! do the AMD ordering on the blocks or on the scalar matrix
@@ -207,8 +237,10 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     {
       double t=get_monotonic_time();
       if (! _blockOrdering) {
+        std::cout << "Computing ordering on the RAW matrix." << std::endl;
         _cholesky.analyzePattern(_sparseMatrix);
       } else {
+        std::cout << "Computing ordering on the BLOCK matrix." << std::endl;
         // block ordering with the Eigen Interface
         // This is really ugly currently, as it calls internal functions from Eigen
         // and modifies the SparseMatrix class

@@ -108,4 +108,9 @@ namespace g2o {
     return _solver ? _solver->computePoseCovariance(poseCovariance) : false;
   }
 
+  bool OptimizationAlgorithmWithHessian::computePartialPoseCovariance()
+  {
+    return _solver ? _solver->computePartialPoseCovariance() : false;
+  }
+
 } // end namespace

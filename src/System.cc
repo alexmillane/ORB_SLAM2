@@ -26,6 +26,7 @@
 #include "orb_slam_2/Converter.h"
 #include "orb_slam_2/DenseMappingInterface.h"
 #include "orb_slam_2/System.h"
+#include "orb_slam_2/Optimizer.h"
 
 namespace ORB_SLAM2 {
 
@@ -560,6 +561,14 @@ bool System::getKeyframePosesById(const std::vector<unsigned long> &KFids,
 
   }
   return true;
+}
+
+std::shared_ptr<g2o::SparseOptimizer> System::getLastGBAOptimizer() {
+  return Optimizer::getLastGBAOptimizer();
+}
+
+void System::getKeyFrames(std::vector<KeyFrame*>* vpKFs) {
+  *vpKFs = mpMap->GetAllKeyFrames();
 }
 
 }  // namespace ORB_SLAM

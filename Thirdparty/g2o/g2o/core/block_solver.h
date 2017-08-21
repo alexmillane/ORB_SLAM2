@@ -27,6 +27,10 @@
 #ifndef G2O_BLOCK_SOLVER_H
 #define G2O_BLOCK_SOLVER_H
 #include <Eigen/Core>
+
+// NOTE(alexmillane): Had to introduce this to be able to return the cholesky factor
+#include <Eigen/Sparse>
+
 #include "solver.h"
 #include "linear_solver.h"
 #include "sparse_block_matrix.h"
@@ -148,6 +152,7 @@ namespace g2o {
       // DEBUG(alexmillane)
       virtual bool saveHessiansToFile(const std::string& fileNameStart) const;
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance);
+      virtual bool computePartialPoseCovariance();
 
     protected:
       void resize(int* blockPoseIndices, int numPoseBlocks, 

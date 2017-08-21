@@ -59,12 +59,26 @@ void MarginalCovarianceCholesky::setCholeskyFactor(int n, int* Lp, int* Li, doub
   _Ax = Lx;
   _perm = permInv;
 
+  std::cout << "About to precompute the diagonal values" << std::endl;
+
   // pre-compute reciprocal values of the diagonal of L
   _diag.resize(n);
   for (int r = 0; r < n; ++r) {
+
+    std::cout << "r : " << r << "/" << n << std::endl;
+
     const int& sc = _Ap[r]; // L is lower triangular, thus the first elem in the column is the diagonal entry
+
+    std::cout << "sc: " << sc << std::endl;
+
     assert(r == _Ai[sc] && "Error in CCS storage of L");
+
+    std::cout << "_Ax[sc]: " << _Ax[sc] << std::endl;
+
     _diag[r] = 1.0 / _Ax[sc];
+
+    std::cout << "_diag[r]: " << _diag[r] << std::endl;
+
   }
 }
 

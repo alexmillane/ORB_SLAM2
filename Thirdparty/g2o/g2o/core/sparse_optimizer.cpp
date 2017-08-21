@@ -572,6 +572,10 @@ namespace g2o{
     return _algorithm->computePoseCovariance(poseCovariance);
   }
 
+  bool SparseOptimizer::computePartialPoseCovariance() {
+    return _algorithm->computePartialPoseCovariance();
+  }
+
 /*  void SparseOptimizer::setPoseCovarianceOutput(MatrixXd& poseCovariance)
   {
     // Setting the destination and indicating that we're fine to store stuff there.

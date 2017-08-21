@@ -31,6 +31,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include <unsupported/Eigen/SparseExtra>
+
 #include "eigen_types.h"
 
 namespace g2o {
@@ -49,6 +51,25 @@ bool writeMatlab(const char* filename, const MatrixXD& mat) {
   fout << mat;
 
   return fout.good();
+}
+
+bool writeMatlab(const std::string& filename, const Eigen::SparseMatrix<double, Eigen::ColMajor>& mat) {
+/*  std::string name = filename;
+  std::string::size_type lastDot = name.find_last_of('.');
+  if (lastDot != std::string::npos) 
+    name = name.substr(0, lastDot);
+
+  std::ofstream fout(filename);
+  fout << std::setprecision(9) << std::fixed;
+
+*/  
+
+  return saveMarket(mat, filename);
+
+/*  // Writing to the file.
+  fout << mat;
+
+  return fout.good();*/
 }
 
 } // end namespace

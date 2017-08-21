@@ -29,6 +29,9 @@
 #include "sparse_block_matrix.h"
 #include "sparse_block_matrix_ccs.h"
 
+// NOTE(alexmillane): Had to introduce this to be able to return the cholesky factor
+#include <Eigen/Sparse>
+
 namespace g2o {
 
 /**
@@ -75,7 +78,13 @@ class LinearSolver
       return false;
     }
 
+    // ALEXS BULLSHIT HERE
+
     virtual bool solveInverse(const SparseBlockMatrix<MatrixType>& A, Eigen::MatrixXd* AInv) {
+      return false;
+    }
+
+    virtual bool getCholeskyFactor(const SparseBlockMatrix<MatrixType>& A, Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr) {
       return false;
     }
 

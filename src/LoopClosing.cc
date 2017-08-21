@@ -646,7 +646,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
 {
     cout << "Starting Global Bundle Adjustment" << endl;
 
-    constexpr bool calculatePoseCovarianceMatrix = true;
+    constexpr bool calculatePoseCovarianceMatrix = false;
     Eigen::MatrixXd poseCavarianceMatrix;
     std::map<unsigned long, int> KFidToHessianCol;
     int idx =  mnFullBAIdx;
