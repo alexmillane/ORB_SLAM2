@@ -63,6 +63,12 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         CholeskyDecomposition() : Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper>() {}
         using Eigen::SimplicialLDLT< SparseMatrix, Eigen::Upper>::analyzePattern_preordered;
 
+/*    class CholeskyDecomposition : public Eigen::SimplicialLLT<SparseMatrix, Eigen::Upper>
+    {
+      public:
+        CholeskyDecomposition() : Eigen::SimplicialLLT<SparseMatrix, Eigen::Upper>() {}
+        using Eigen::SimplicialLLT< SparseMatrix, Eigen::Upper>::analyzePattern_preordered;
+*/
         void analyzePatternWithPermutation(SparseMatrix& a, const PermutationMatrix& permutation)
         {
           m_Pinv = permutation;
@@ -200,11 +206,34 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       //auto tri_test = _cholesky.matrixL();
 
 
-      //typename CholeskyDecomposition::CholMatrixType full_factor = _cholesky.matrixL();
+      std::cout << "About to do assignment" << std::endl;
+      // Cholesky factor (LDLT factorization)
+      Eigen::SparseMatrix<double, Eigen::ColMajor> L(_cholesky.matrixL());
 
-      // DEBUG WRITTING TO FILE
-//      *factor_ptr = _cholesky.matrixL();
-      *factor_ptr = _cholesky.matrixU().transpose();
+      // The square root D part
+      std::cout << "About to do D" << std::endl;
+//      Eigen::SparseMatrix<double, Eigen::ColMajor> D_sqrt;
+      Eigen::VectorXd D_diag = _cholesky.vectorD();
+      std::cout << "D_diag: " << std::endl << D_diag << std::endl;
+
+      Eigen::VectorXd D_diag_sqrt = D_diag.cwiseSqrt();
+      std::cout << "D_diag_sqrt: " << std::endl << D_diag_sqrt << std::endl;
+
+
+
+      Eigen::SparseMatrix<double, Eigen::ColMajor> D_sqrt(A.rows(), A.rows());
+      std::vector<Eigen::Triplet<double>> triplets;
+      for (size_t i = 0; i < D_diag_sqrt.size(); i++) {
+        triplets.emplace_back(Eigen::Triplet<double>(i, i, D_diag_sqrt[i]));
+      }
+      D_sqrt.setFromTriplets(triplets.begin(), triplets.end());
+      std::cout << "D_sqrt: " << std::endl << D_sqrt << std::endl;
+
+      // DEBUG
+
+      // Output
+      *factor_ptr = L * D_sqrt;
+//      *factor_ptr = _cholesky.matrixU().transpose();
 
       //selfadjointView<Eigen::Upper>()
 

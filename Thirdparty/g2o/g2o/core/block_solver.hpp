@@ -774,9 +774,32 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   MarginalCovarianceCholesky marginal_covariance_cholesky;
   marginal_covariance_cholesky.setCholeskyFactor(n, Lp, Li, Lx, 0);
 
+
+
+  // TESTING
+  // The block indices to recover
+  /*
+  std::pair<int, int> testBlock1 = {1, 1};
+  std::pair<int, int> testBlock2 = {2, 2};
+  std::vector< std::pair<int, int> > blockIndices;
+  blockIndices.push_back(testBlock1);
+  blockIndices.push_back(testBlock2);
+  */
+  std::vector<std::pair<int, int> > blockIndices = {{0, 0}, {1, 1}, {6, 6}};
+
+  // Recovering matrix elements
+  SparseBlockMatrix<MatrixXD> spinv;
+  marginal_covariance_cholesky.computeCovariance(
+      spinv, _Hschur->rowBlockIndices(), blockIndices);
+
+  // Printing the result
+  std::cout << "spinv: " << std::endl << spinv << std::endl;
+
   // Saving the cholesky factor
   std::cout << "Saving the cholesky factor" << std::endl;
-  std::string filename = "/home/millanea/Desktop/cholesky_factor";
+  const std::string filename =
+      "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+      "covariance/cholesky_factor";
   io::writeMatlab(filename, cholesky_factor);
 
   /* --------------------------------------------------
