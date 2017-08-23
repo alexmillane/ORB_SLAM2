@@ -219,4 +219,26 @@ void MarginalCovarianceCholesky::computeCovariance(SparseBlockMatrix<MatrixXd>& 
   }
 }
 
+void MarginalCovarianceCholesky::getComputedIndices(MatrixXd& computedIndicator) {
+
+  // Building up the sparse matrix of computed entries
+  computedIndicator = MatrixXd::Zero(_n, _n);
+
+  // Iterating over the map of computed indices
+  //size_t key_idx = 0;
+  for (const auto& pair : _map) {
+    const int key = pair.first;
+    const int r = key % _n;
+    const int c = std::floor(key / _n);
+    //std::cout << "key[" << key_idx << "]: " << std::endl
+    //          << "  key: " << pair.first << std::endl
+    //          << "  c: " << c << std::endl
+    //          << "  r: " << r << std::endl;
+    //key_idx++;
+    // Indicating that this has been computed
+    computedIndicator(r, c) = 1.0;
+  }
+
+}
+
 } // end namespace

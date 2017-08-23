@@ -84,7 +84,10 @@ class LinearSolver
       return false;
     }
 
-    virtual bool getCholeskyFactor(const SparseBlockMatrix<MatrixType>& A, Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr) {
+    virtual bool getCholeskyFactor(
+        const SparseBlockMatrix<MatrixType>& A,
+        Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr,
+        Eigen::PermutationMatrix<Eigen::Dynamic>* P_ptr) {
       return false;
     }
 

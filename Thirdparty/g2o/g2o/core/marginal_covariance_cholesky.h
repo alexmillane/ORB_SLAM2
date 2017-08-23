@@ -78,6 +78,9 @@ namespace g2o {
        */
       void setCholeskyFactor(int n, int* Lp, int* Li, double* Lx, int* permInv);
 
+      // DEBUG(alex.millane): Gets the indices of which block have been computed
+      void getComputedIndices(MatrixXd& computedIndicator);
+
     protected:
       // information about the cholesky factor (lower triangle)
       int _n;           ///< L is an n X n matrix

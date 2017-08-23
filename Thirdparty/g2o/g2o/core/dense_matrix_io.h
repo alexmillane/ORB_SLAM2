@@ -38,7 +38,9 @@
 namespace g2o {
 namespace io {
 
-bool writeMatlab(const char* filename, const MatrixXD& mat) {
+//bool writeMatlab(const char* filename, const MatrixXD& mat) {
+template<typename Derived>
+bool writeMatlab(const char* filename, const Eigen::MatrixBase<Derived>& mat) {
   std::string name = filename;
   std::string::size_type lastDot = name.find_last_of('.');
   if (lastDot != std::string::npos) 

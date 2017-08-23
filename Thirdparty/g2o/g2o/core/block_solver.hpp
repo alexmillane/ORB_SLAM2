@@ -738,7 +738,9 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   //                    a factor which is a sparse block matrix.
   std::cout << "Getting the cholesky factor" << std::endl;
   Eigen::SparseMatrix<double, Eigen::ColMajor> cholesky_factor;
-  _linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor);
+  Eigen::PermutationMatrix<Eigen::Dynamic> P;
+  //Eigen::PermutationMatrix<Eigen::Dynamic> PInv = P.inverse();
+  _linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor, &P);
 
   // Getting the CCS representation of the cholesky factor
   std::cout << "Compressing the cholesky factor" << std::endl;
@@ -747,6 +749,7 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   int* Lp = cholesky_factor.outerIndexPtr();
   int* Li = cholesky_factor.innerIndexPtr();
   double* Lx = cholesky_factor.valuePtr();
+  int* permInv = P.indices().data();
 
   // DEBUG
   // ----------------------------------------------
@@ -772,7 +775,7 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   // Creating the marginal cholesky object
   std::cout << "Setting up the cholesky covariance solver" << std::endl;
   MarginalCovarianceCholesky marginal_covariance_cholesky;
-  marginal_covariance_cholesky.setCholeskyFactor(n, Lp, Li, Lx, 0);
+  marginal_covariance_cholesky.setCholeskyFactor(n, Lp, Li, Lx, permInv);
 
 
 
@@ -785,22 +788,42 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   blockIndices.push_back(testBlock1);
   blockIndices.push_back(testBlock2);
   */
-  std::vector<std::pair<int, int> > blockIndices = {{0, 0}, {1, 1}, {6, 6}};
+  //std::vector<std::pair<int, int> > blockIndices = {{0, 0}, {1, 1}, {6, 6}};
+  std::vector<std::pair<int, int> > blockIndices = {{20, 20}};
 
   // Recovering matrix elements
   SparseBlockMatrix<MatrixXD> spinv;
   marginal_covariance_cholesky.computeCovariance(
       spinv, _Hschur->rowBlockIndices(), blockIndices);
 
+  // Getting the computed elements of the cholesky factor
+  Eigen::MatrixXd computedIndicator;
+  marginal_covariance_cholesky.getComputedIndices(computedIndicator);
+
   // Printing the result
   std::cout << "spinv: " << std::endl << spinv << std::endl;
 
   // Saving the cholesky factor
   std::cout << "Saving the cholesky factor" << std::endl;
-  const std::string filename =
+  const std::string cholesky_filename =
       "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
       "covariance/cholesky_factor";
-  io::writeMatlab(filename, cholesky_factor);
+  io::writeMatlab(cholesky_filename, cholesky_factor);
+
+  // Saving the permutation matrix
+  std::cout << "Saving the permutation matrix" << std::endl;
+  const std::string permutation_filename =
+      "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+      "covariance/permutation_matrix";
+  io::writeMatlab(permutation_filename.c_str(),   P.toDenseMatrix());
+
+  // Saving the computed indicator
+  std::cout << "Saving the computed indicator" << std::endl;
+  const std::string indicator_filename =
+      "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+      "covariance/computed_indicator";
+  io::writeMatlab(indicator_filename.c_str(), computedIndicator);
+
 
   /* --------------------------------------------------
   

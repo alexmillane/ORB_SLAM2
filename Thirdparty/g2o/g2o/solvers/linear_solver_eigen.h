@@ -186,9 +186,12 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     }
 
     // TODO(alexmillane): This mean that the above classes need the concept of an eigen sparse matrix.. Not good.
-    bool getCholeskyFactor(const SparseBlockMatrix<MatrixType>& A, Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr) {
+    bool getCholeskyFactor(
+        const SparseBlockMatrix<MatrixType>& A,
+        Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr,
+        Eigen::PermutationMatrix<Eigen::Dynamic>* P_ptr) {
       // DEBUG (alexmillane)
-      std::cout << "Getting cholesky factor." << std::endl;
+      //std::cout << "Getting cholesky factor." << std::endl;
 
       // Factorize
       double t;
@@ -196,50 +199,37 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         return false;
       }
 
-      //
-      //typename CholeskyDecomposition::CholMatrixType mat_test;
-      //CholeskyDecomposition::internal::MatrixL ;
-/*      Eigen::TriangularView<
-          const typename CholeskyDecomposition::CholMatrixType, Eigen::Lower>
-          tri_test = _cholesky.matrixL();
-*/
-      //auto tri_test = _cholesky.matrixL();
-
-
-      std::cout << "About to do assignment" << std::endl;
-      // Cholesky factor (LDLT factorization)
+      // Cholesky factor - Get L - (LDLT factorization)
       Eigen::SparseMatrix<double, Eigen::ColMajor> L(_cholesky.matrixL());
 
-      // The square root D part
-      std::cout << "About to do D" << std::endl;
-//      Eigen::SparseMatrix<double, Eigen::ColMajor> D_sqrt;
+      // Cholesky factor - Get D - (LDLT factorization)
       Eigen::VectorXd D_diag = _cholesky.vectorD();
-      std::cout << "D_diag: " << std::endl << D_diag << std::endl;
-
       Eigen::VectorXd D_diag_sqrt = D_diag.cwiseSqrt();
-      std::cout << "D_diag_sqrt: " << std::endl << D_diag_sqrt << std::endl;
-
-
-
       Eigen::SparseMatrix<double, Eigen::ColMajor> D_sqrt(A.rows(), A.rows());
       std::vector<Eigen::Triplet<double>> triplets;
       for (size_t i = 0; i < D_diag_sqrt.size(); i++) {
         triplets.emplace_back(Eigen::Triplet<double>(i, i, D_diag_sqrt[i]));
       }
       D_sqrt.setFromTriplets(triplets.begin(), triplets.end());
-      std::cout << "D_sqrt: " << std::endl << D_sqrt << std::endl;
+
+      // Factor Output
+      *factor_ptr = L * D_sqrt;
+
+      // Cholesky factor - Get P - (LDLT factorization)
+      *P_ptr = _cholesky.permutationP();
 
       // DEBUG
+      //std::cout << "D_diag: " << std::endl << D_diag << std::endl;
+      //std::cout << "D_diag_sqrt: " << std::endl << D_diag_sqrt << std::endl;
+      //std::cout << "D_sqrt: " << std::endl << D_sqrt << std::endl;
+      //std::cout << "P_indices: " << std::endl << P_ptr->indices() << std::endl;
 
-      // Output
-      *factor_ptr = L * D_sqrt;
-//      *factor_ptr = _cholesky.matrixU().transpose();
-
-      //selfadjointView<Eigen::Upper>()
-
+/*      // Testing the pointer to underlying data
+      int* int_ptr = P_ptr->indices().data();
+      for (size_t i = 0; i < P_ptr->rows(); i++) {
+        std::cout << "int_ptr[i]: " << int_ptr[i] << std::endl;
+      }*/
     }
-
-
 
     //! do the AMD ordering on the blocks or on the scalar matrix
     bool blockOrdering() const { return _blockOrdering;}
