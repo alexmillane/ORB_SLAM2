@@ -256,10 +256,10 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     {
       double t=get_monotonic_time();
       if (! _blockOrdering) {
-        std::cout << "Computing ordering on the RAW matrix." << std::endl;
+        //std::cout << "Computing ordering on the RAW matrix." << std::endl;
         _cholesky.analyzePattern(_sparseMatrix);
       } else {
-        std::cout << "Computing ordering on the BLOCK matrix." << std::endl;
+        //std::cout << "Computing ordering on the BLOCK matrix." << std::endl;
         // block ordering with the Eigen Interface
         // This is really ugly currently, as it calls internal functions from Eigen
         // and modifies the SparseMatrix class

@@ -726,11 +726,13 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
 
   // Timing
   std::cout << "Getting the schur compliment" << std::endl;
-  double t=get_monotonic_time();
+  //double t=get_monotonic_time();
   // Restoring the diagonal in case Levenberg has fucked with it
   restoreDiagonal();
   // Recomputing the schur compliment with the original diagonal
   updateSchur();
+  // Timing
+  //cerr << "Partial Covariance [schur] = " <<  get_monotonic_time()-t << endl;
 
   // Getting the cholesky factor
   // TODO(alexmillane): Returning a pure sparse matrix introduces a dependency on Eigen Sparse Matrix
@@ -772,29 +774,21 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   }*/
   // ----------------------------------------------
 
+  // The inverse blocks to recover
+  std::vector<std::pair<int, int> > blockIndices = {{30, 30}};
+
+  // Timing
+  double t=get_monotonic_time();
   // Creating the marginal cholesky object
   std::cout << "Setting up the cholesky covariance solver" << std::endl;
   MarginalCovarianceCholesky marginal_covariance_cholesky;
   marginal_covariance_cholesky.setCholeskyFactor(n, Lp, Li, Lx, permInv);
 
-
-
-  // TESTING
-  // The block indices to recover
-  /*
-  std::pair<int, int> testBlock1 = {1, 1};
-  std::pair<int, int> testBlock2 = {2, 2};
-  std::vector< std::pair<int, int> > blockIndices;
-  blockIndices.push_back(testBlock1);
-  blockIndices.push_back(testBlock2);
-  */
-  //std::vector<std::pair<int, int> > blockIndices = {{0, 0}, {1, 1}, {6, 6}};
-  std::vector<std::pair<int, int> > blockIndices = {{20, 20}};
-
   // Recovering matrix elements
   SparseBlockMatrix<MatrixXD> spinv;
   marginal_covariance_cholesky.computeCovariance(
       spinv, _Hschur->rowBlockIndices(), blockIndices);
+  cerr << "Partial Covariance [extract factor] = " <<  get_monotonic_time()-t << endl;
 
   // Getting the computed elements of the cholesky factor
   Eigen::MatrixXd computedIndicator;
