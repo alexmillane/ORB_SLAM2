@@ -136,7 +136,7 @@ namespace g2o {
       virtual void setVerbose(bool verbose) {_verbose = verbose;}
       virtual bool saveHessiansToFile(const std::string& fileNameStart ) const { return false; }
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
-      virtual bool computePartialPoseCovariance() { return false; }
+      virtual bool computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices) { return false; }
 
      protected:
       SparseOptimizer* _optimizer;

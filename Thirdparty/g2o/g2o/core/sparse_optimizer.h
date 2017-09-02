@@ -183,7 +183,7 @@ namespace g2o {
     void saveHessiansToFile(const std::string& filePath);
     // Computes the pose covariance
     bool computePoseCovariance(MatrixXd& poseCovariance);
-    bool computePartialPoseCovariance();
+    bool computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices);
 
     /**
      * sets a variable checked at every iteration to force a user stop. The iteration exits when the variable is true;

@@ -718,7 +718,7 @@ bool BlockSolver<Traits>::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
 }
 
 template <typename Traits>
-bool BlockSolver<Traits>::computePartialPoseCovariance()
+bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices)
 {
   // If not computing by schur's compliment this function will not work.
   if (!_doSchur)
@@ -775,7 +775,7 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   // ----------------------------------------------
 
   // The inverse blocks to recover
-  std::vector<std::pair<int, int> > blockIndices = {{30, 30}};
+  //std::vector<std::pair<int, int> > blockIndices = {{30, 30}};
 
   // Timing
   double t=get_monotonic_time();
@@ -785,7 +785,7 @@ bool BlockSolver<Traits>::computePartialPoseCovariance()
   marginal_covariance_cholesky.setCholeskyFactor(n, Lp, Li, Lx, permInv);
 
   // Recovering matrix elements
-  SparseBlockMatrix<MatrixXD> spinv;
+  //SparseBlockMatrix<MatrixXD> spinv;
   marginal_covariance_cholesky.computeCovariance(
       spinv, _Hschur->rowBlockIndices(), blockIndices);
   cerr << "Partial Covariance [extract factor] = " <<  get_monotonic_time()-t << endl;
