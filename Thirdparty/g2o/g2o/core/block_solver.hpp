@@ -734,6 +734,16 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   // Timing
   //cerr << "Partial Covariance [schur] = " <<  get_monotonic_time()-t << endl;
 
+  /*----------------------------------------------
+   * USING THE CHOLMOD SOLVER ORDERING
+   *----------------------------------------------*/
+  //std::cout << "Getting the sparse inverse with CHOLMOD." << std::endl;
+  //return _linearSolver->solvePattern(spinv, blockIndices, *_Hschur);
+  //_linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor, &P);
+
+  /*----------------------------------------------
+   * USING THE EIGEN SOLVER
+   *----------------------------------------------*/
   // Getting the cholesky factor
   // TODO(alexmillane): Returning a pure sparse matrix introduces a dependency on Eigen Sparse Matrix
   //                    up the entire chain. Would be good to move to block based reordering and return
@@ -741,7 +751,6 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   std::cout << "Getting the cholesky factor" << std::endl;
   Eigen::SparseMatrix<double, Eigen::ColMajor> cholesky_factor;
   Eigen::PermutationMatrix<Eigen::Dynamic> P;
-  //Eigen::PermutationMatrix<Eigen::Dynamic> PInv = P.inverse();
   _linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor, &P);
 
   // Getting the CCS representation of the cholesky factor
@@ -752,30 +761,6 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   int* Li = cholesky_factor.innerIndexPtr();
   double* Lx = cholesky_factor.valuePtr();
   int* permInv = P.indices().data();
-
-  // DEBUG
-  // ----------------------------------------------
-/*  // Inspecting the CCS elements
-  for (size_t i = 0; i < cholesky_factor.nonZeros(); i++) {
-    std::cout << "Lx: " << Lx[i] << std::endl;
-  }
-
-  for (size_t i = 0; i < cholesky_factor.nonZeros(); i++) {
-    std::cout << "Li: " << Li[i] << std::endl;
-  }
-
-  for (size_t i = 0; i < cholesky_factor.cols(); i++) {
-    std::cout << "Lp: " << Lp[i] << std::endl;
-  }
-
-  // Diagonal elements
-  for (size_t i = 0; i < cholesky_factor.cols(); i++) {
-    std::cout << "diag(cholesky_factor)[i]: " << cholesky_factor.coeffRef(i,i) << std::endl;
-  }*/
-  // ----------------------------------------------
-
-  // The inverse blocks to recover
-  //std::vector<std::pair<int, int> > blockIndices = {{30, 30}};
 
   // Timing
   double t=get_monotonic_time();
@@ -818,54 +803,6 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
       "covariance/computed_indicator";
   io::writeMatlab(indicator_filename.c_str(), computedIndicator);
 
-
-  /* --------------------------------------------------
-  
-  // Testing out eigen's CCS storage
-  /*
-   * 0  3 0  0 0
-   * 22 0 0  0 17
-   * 7  5 0  1 0
-   * 0  0 0  0 0
-   * 0  0 14 0 8*/
-
-  /*
-  // Triplets list
-  std::cout << "Creating the triplets list." << std::endl;
-  std::vector<Eigen::Triplet<double>> triplet_list = {
-      {0, 1, 3.0}, {1, 0, 22.0}, {1, 4, 17.0}, {2, 0, 7.0},
-      {2, 1, 5.0}, {2, 3, 1.0},  {4, 2, 14.0}, {4, 4, 8.0}};
-  for (const auto& triplet : triplet_list) {
-    std::cout << "triplet: r: " << triplet.row() << ", c: " << triplet.col()
-              << ", v: " << triplet.value() << std::endl;
-  }
-
-  // Creating the sparse matrix
-  std::cout << "Creating the matrix from triplets list." << std::endl;
-  Eigen::SparseMatrix<double, Eigen::ColMajor> test_sparse_matrix(5,5);
-  test_sparse_matrix.setFromTriplets(triplet_list.begin(), triplet_list.end());
-  std::cout << "test_sparse_matrix: " << std::endl << test_sparse_matrix << std::endl;
-
-  // Inspecting the CCS elements
-  size_t nnz = test_sparse_matrix.nonZeros();
-  test_sparse_matrix.makeCompressed();
-  double* value_ptr = test_sparse_matrix.valuePtr();
-  for (size_t i = 0; i < nnz; i++) {
-    std::cout << "value: " << *value_ptr << std::endl;
-    value_ptr++;
-  }
-
-  int* inner_index_ptr = test_sparse_matrix.innerIndexPtr();
-  for (size_t i = 0; i < nnz; i++) {
-    std::cout << "inner_index: " << *inner_index_ptr << std::endl;
-    inner_index_ptr++;
-  }
-
-  int* outer_index_ptr = test_sparse_matrix.outerIndexPtr();
-  for (size_t i = 0; i < test_sparse_matrix.cols(); i++) {
-    std::cout << "outer_index: " << *outer_index_ptr << std::endl;
-    outer_index_ptr++;
-  }*/
 }
 
 } // end namespace

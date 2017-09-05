@@ -17,7 +17,5 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/g2o/CMakeLists.txt)
 # Compiling Orb_slam_2
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeLists.txt)
 
-message(WARNING "${CATKIN_GLOBAL_INCLUDE_DESTINATION}")
-
 cs_install()
 cs_export(INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include include "${DBOW2_ROOT_DIR}" "${g2o_ROOT_DIR}")

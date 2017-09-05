@@ -158,31 +158,12 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       SparseMatrix I(size, size);
       I.setIdentity();
 
-      // DEBUG(alexmillane):
-      // block size for debug
-      //constexpr size_t block_size = 12;
 
-      // Just a sample before
-      //SparseMatrix blockBefore = I.block(0, 0, block_size, block_size);
-      //std::cout << "blockBefore: " << std::endl << blockBefore << std::endl;
-
-      // Doing the solve (in place)
-      // NOTE(alexmillane): In inverting the matrix, all sparsity is lost
-      //SparseMatrix AInvDense(_cholesky.solve(I));
+      // Doing the solve
       *AInv = _cholesky.solve(I);
 
-      // Just a sample before
-      //SparseMatrix blockAfter = AInv.block(0, 0, block_size, block_size);
-      //std::cout << "blockAfter: " << std::endl << blockAfter << std::endl;
-
-      // DEBUG
-      //std::cout << "AInv.rows(): " << *AInv.rows() << std::endl;
-      //std::cout << "AInv.cols(): " << *AInv.cols() << std::endl;
-      //std::cout << "AInv.nonZeros(): " << *AInv.nonZeros() << std::endl;
-
-
+      // Solve
       return true;
-
     }
 
     // TODO(alexmillane): This mean that the above classes need the concept of an eigen sparse matrix.. Not good.

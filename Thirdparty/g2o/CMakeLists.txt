@@ -79,8 +79,21 @@ ELSE(EIGEN3_FOUND)
   SET(G2O_EIGEN3_INCLUDE "" CACHE PATH "Directory of Eigen3")
 ENDIF(EIGEN3_FOUND)
 
+# For building the CHOLMOD
+FIND_PACKAGE(Cholmod)
+FIND_PACKAGE(BLAS)
+FIND_PACKAGE(LAPACK)
+IF(CHOLMOD_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
+  MESSAGE(WARNING "Found CHOLMOD and its dependencies")
+  SET(CHOLMOD_FOUND TRUE)
+ELSE()
+  MESSAGE(WARNING "Did not find CHOLMOD and its dependencies")
+  SET(CHOLMOD_FOUND FALSE)
+ENDIF()
+
 # Generate config.h
 SET(G2O_CXX_COMPILER "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER}")
+SET(G2O_HAVE_CHOLMOD ${CHOLMOD_FOUND})
 configure_file(${g2o_ROOT_DIR}/config.h.in ${g2o_ROOT_DIR}/config.h)
 
 # Set up the top-level include directories
@@ -88,7 +101,11 @@ INCLUDE_DIRECTORIES(
 ${g2o_CODE_DIR}/core
 ${g2o_CODE_DIR}/types
 ${g2o_CODE_DIR}/stuff 
-${G2O_EIGEN3_INCLUDE})
+${G2O_EIGEN3_INCLUDE}
+${CHOLMOD_INCLUDE_DIR})
+
+#ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/g2o)
+ADD_SUBDIRECTORY(${g2o_ROOT_DIR}/g2o/solvers)
 
 # Include the subdirectories
 add_library(g2o ${G2O_LIB_TYPE}
@@ -176,6 +193,11 @@ ${g2o_ROOT_DIR}/g2o/stuff/os_specific.h
 ${g2o_ROOT_DIR}/g2o/stuff/string_tools.cpp
 ${g2o_ROOT_DIR}/g2o/stuff/property.cpp       
 ${g2o_ROOT_DIR}/g2o/stuff/property.h       
+${g2o_ROOT_DIR}/g2o/stuff/sparse_helper.cpp    
+${g2o_ROOT_DIR}/g2o/stuff/sparse_helper.h       
+${g2o_ROOT_DIR}/g2o/stuff/g2o_stuff_api.h           
 )
+
+target_link_libraries(g2o solver_cholmod)
 
 #cs_install()

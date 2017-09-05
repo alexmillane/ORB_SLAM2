@@ -194,6 +194,8 @@ namespace g2o {
 
   };
 
+  template<int p, int l>
+  using BlockSolverPL = BlockSolver< BlockSolverTraits<p, l> >;
 
   //variable size solver
   typedef BlockSolver< BlockSolverTraits<Eigen::Dynamic, Eigen::Dynamic> > BlockSolverX;
