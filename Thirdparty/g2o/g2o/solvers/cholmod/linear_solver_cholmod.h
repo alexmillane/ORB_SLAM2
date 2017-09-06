@@ -34,6 +34,9 @@
 #include "../../stuff/timeutil.h"
 #include "../../stuff/sparse_helper.h"
 
+// TODO: MOVE THIS TO STUFF
+#include "../../core/dense_matrix_io.h"
+
 #include <cholmod.h>
 
 namespace g2o {
@@ -211,6 +214,9 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
 
     virtual bool solvePattern(SparseBlockMatrix<MatrixXD>& spinv, const std::vector<std::pair<int, int> >& blockIndices, const SparseBlockMatrix<MatrixType>& A)
     {
+      //DEBUG
+      std::cout << "CHOLMOD: Solving pattern without forcing" << std::endl;
+
       //cerr << __PRETTY_FUNCTION__ << " using cholmod" << endl;
       fillCholmodExt(A, _cholmodFactor != 0); // _cholmodFactor used as bool, if not existing will copy the whole structure, otherwise only the values
 
@@ -250,6 +256,81 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
       return true;
     }
 
+    virtual bool solvePatternWithForcing(SparseBlockMatrix<MatrixXD>& spinv, const std::vector<std::pair<int, int> >& blockIndices, const SparseBlockMatrix<MatrixType>& A)
+    {
+      //DEBUG
+      std::cout << "CHOLMOD: Solving pattern with forcing" << std::endl;
+
+      //cerr << __PRETTY_FUNCTION__ << " using cholmod" << endl;
+      fillCholmodExt(A, _cholmodFactor != 0); // _cholmodFactor used as bool, if not existing will copy the whole structure, otherwise only the values
+
+      // Computing the unique set of blocks to constrained in the symbolic decomposition
+      std::set<int> blocksSet;
+      for (const auto& blockIndex : blockIndices) {
+        blocksSet.insert(blockIndex.first);
+        blocksSet.insert(blockIndex.second);
+      }
+      std::vector<int> blocks;
+      blocks.reserve(blocksSet.size());
+      blocks.insert(blocks.end(), blocksSet.begin(), blocksSet.end());
+
+/*      // DEBUG
+      std::cout << "Printing the blocks for forcing." << std::endl;
+      for (const int block : blocks) {
+        std::cout << "block: " << block << std::endl;
+      }
+*/
+      // Now we force a re-calculation of the symbolic decomposition
+      // We first delete the existing cholesky factor
+      init();
+      computeSymbolicDecompositionWithBlockForcing(A, blocks);
+      assert(_cholmodFactor && "Symbolic cholesky failed");
+
+      std::cout << "Cholmod factorize" << std::endl;
+      cholmod_factorize(_cholmodSparse, _cholmodFactor, &_cholmodCommon);
+      if (_cholmodCommon.status == CHOLMOD_NOT_POSDEF)
+        return false;
+
+      // convert the factorization to LL, simplical, packed, monotonic
+      int change_status = cholmod_change_factor(CHOLMOD_REAL, 1, 0, 1, 1, _cholmodFactor, &_cholmodCommon);
+      if (! change_status) {
+        return false;
+      }
+      assert(_cholmodFactor->is_ll && !_cholmodFactor->is_super && _cholmodFactor->is_monotonic && "Cholesky factor has wrong format");
+
+      // invert the permutation
+      int* p = (int*)_cholmodFactor->Perm;
+      VectorXI pinv; pinv.resize(_cholmodSparse->ncol);
+      for (size_t i = 0; i < _cholmodSparse->ncol; ++i)
+        pinv(p[i]) = i;
+
+      // compute the marginal covariance
+      MarginalCovarianceCholesky mcc;
+      mcc.setCholeskyFactor(_cholmodSparse->ncol, (int*)_cholmodFactor->p, (int*)_cholmodFactor->i,
+          (double*)_cholmodFactor->x, pinv.data());
+      mcc.computeCovariance(spinv, A.rowBlockIndices(), blockIndices);
+
+      // Saving what has been computed to file
+      constexpr bool saveComputedIndices = false;
+      if (saveComputedIndices) {
+        std::cout << "Saving computed indicator to disk." << std::endl;
+        std::string path = "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/covariance/computed_indicator";
+        MatrixXd computedIndicator;
+        mcc.getComputedIndices(computedIndicator);
+        io::writeMatlab(path.c_str(), computedIndicator);
+      }
+
+      G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+      if (globalStats) {
+        globalStats->choleskyNNZ = static_cast<size_t>(_cholmodCommon.method[_cholmodCommon.selected].lnz);
+      }
+
+      // We first delete the existing cholesky factor as this ordering is unlikely to be used again
+      init();
+
+      return true;
+    }
+
     //! do the AMD ordering on the blocks or on the scalar matrix
     bool blockOrdering() const { return _blockOrdering;}
     void setBlockOrdering(bool blockOrdering) { _blockOrdering = blockOrdering;}
@@ -277,13 +358,13 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
     {
       double t = get_monotonic_time();
       if (! _blockOrdering) {
+        std::cout << "[CHOLMOD]: SCALAR DECOMPOSITION." << std::endl;
         // setup ordering strategy
         _cholmodCommon.nmethods = 1;
         _cholmodCommon.method[0].ordering = CHOLMOD_AMD; //CHOLMOD_COLAMD
         _cholmodFactor = cholmod_analyze(_cholmodSparse, &_cholmodCommon); // symbolic factorization
       } else {
-
-        std::cout << "[CHOLMOD]: USING BLOCK BASED REORDERING." << std::endl;
+        std::cout << "[CHOLMOD]: BLOCK DECOMPOSITION." << std::endl;
 
         A.fillBlockStructure(_matrixStructure);
 
@@ -308,8 +389,8 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
         auxCholmodSparse.dtype = CHOLMOD_DOUBLE;
         auxCholmodSparse.sorted = 1;
         auxCholmodSparse.packed = 1;
-        //int amdStatus = cholmod_amd(&auxCholmodSparse, NULL, 0, _blockPermutation.data(), &_cholmodCommon);
-        int amdStatus = cholmod_camd(&auxCholmodSparse, NULL, 0, NULL, _blockPermutation.data(), &_cholmodCommon);
+        int amdStatus = cholmod_amd(&auxCholmodSparse, NULL, 0, _blockPermutation.data(), &_cholmodCommon);
+        
         if (! amdStatus) {
           return;
         }
@@ -343,6 +424,86 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
       //cerr << "# Number of nonzeros in L: " << (int)_cholmodCommon.method[bestIdx].lnz << " by "
         //<< (_cholmodCommon.method[bestIdx].ordering == CHOLMOD_GIVEN ? "block" : "scalar") << " AMD ordering " << endl;
 
+    }
+
+    void computeSymbolicDecompositionWithBlockForcing(const SparseBlockMatrix<MatrixType>& A, const std::vector<int>& blockIndices)
+    {
+      double t = get_monotonic_time();
+
+      std::cout << "[CHOLMOD]: DOING BLOCK BASED REORDERING WITH FORCING." << std::endl;
+
+      A.fillBlockStructure(_matrixStructure);
+
+      // get the ordering for the block matrix
+      if (_blockPermutation.size() == 0)
+        _blockPermutation.resize(_matrixStructure.n);
+      if (_blockPermutation.size() < _matrixStructure.n) // double space if resizing
+        _blockPermutation.resize(2*_matrixStructure.n);
+
+      // prepare CAMD call via CHOLMOD
+      cholmod_sparse auxCholmodSparse;
+      auxCholmodSparse.nzmax = _matrixStructure.nzMax();
+      auxCholmodSparse.nrow = auxCholmodSparse.ncol = _matrixStructure.n;
+      auxCholmodSparse.p = _matrixStructure.Ap;
+      auxCholmodSparse.i = _matrixStructure.Aii;
+      auxCholmodSparse.nz = 0;
+      auxCholmodSparse.x = 0;
+      auxCholmodSparse.z = 0;
+      auxCholmodSparse.stype = 1;
+      auxCholmodSparse.xtype = CHOLMOD_PATTERN;
+      auxCholmodSparse.itype = CHOLMOD_INT;
+      auxCholmodSparse.dtype = CHOLMOD_DOUBLE;
+      auxCholmodSparse.sorted = 1;
+      auxCholmodSparse.packed = 1;
+
+      // Filling out the constraint vector
+      // The requested blocks are put in a constraint set forcing them to the end
+      std::vector<int> cMemberVector(auxCholmodSparse.nrow);
+      std::fill(cMemberVector.begin(), cMemberVector.end(), 0);
+      for (const int blockIndex : blockIndices) {
+        cMemberVector[blockIndex] = 1;
+        std::cout << "blockIndex = " << blockIndex << " = 1" << std::endl;
+      }
+
+      // Doing the constrained reordering
+      int amdStatus = cholmod_camd(&auxCholmodSparse, NULL, 0, cMemberVector.data(), _blockPermutation.data(), &_cholmodCommon);
+      
+      if (! amdStatus) {
+        return;
+      }
+
+/*      // DEBUG
+      // Looking at the permutation matrix
+      std::cout << "Block permutation output." << std::endl;
+      for (int i = 0; i < _matrixStructure.n; ++i) {
+        const int& p = _blockPermutation(i);
+        std::cout << "i: " << i << ", p: " << p << std::endl;
+      }*/
+
+      // blow up the permutation to the scalar matrix
+      if (_scalarPermutation.size() == 0)
+        _scalarPermutation.resize(_cholmodSparse->ncol);
+      if (_scalarPermutation.size() < (int)_cholmodSparse->ncol)
+        _scalarPermutation.resize(2*_cholmodSparse->ncol);
+      size_t scalarIdx = 0;
+      for (int i = 0; i < _matrixStructure.n; ++i) {
+        const int& p = _blockPermutation(i);
+        int base  = A.colBaseOfBlock(p);
+        int nCols = A.colsOfBlock(p);
+        for (int j = 0; j < nCols; ++j)
+          _scalarPermutation(scalarIdx++) = base++;
+      }
+      assert(scalarIdx == _cholmodSparse->ncol);
+
+      // apply the ordering
+      _cholmodCommon.nmethods = 1 ;
+      _cholmodCommon.method[0].ordering = CHOLMOD_GIVEN;
+      _cholmodFactor = cholmod_analyze_p(_cholmodSparse, _scalarPermutation.data(), NULL, 0, &_cholmodCommon);
+
+
+      G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+      if (globalStats)
+        globalStats->timeSymbolicDecomposition = get_monotonic_time() - t;
     }
 
     void fillCholmodExt(const SparseBlockMatrix<MatrixType>& A, bool onlyValues)

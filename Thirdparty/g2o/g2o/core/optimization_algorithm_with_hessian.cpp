@@ -108,9 +108,9 @@ namespace g2o {
     return _solver ? _solver->computePoseCovariance(poseCovariance) : false;
   }
 
-  bool OptimizationAlgorithmWithHessian::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices)
+  bool OptimizationAlgorithmWithHessian::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing)
   {
-    return _solver ? _solver->computePartialPoseCovariance(spinv, blockIndices) : false;
+    return _solver ? _solver->computePartialPoseCovariance(spinv, blockIndices, useForcing) : false;
   }
 
 } // end namespace

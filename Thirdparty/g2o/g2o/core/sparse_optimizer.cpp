@@ -572,8 +572,8 @@ namespace g2o{
     return _algorithm->computePoseCovariance(poseCovariance);
   }
 
-  bool SparseOptimizer::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices) {
-    return _algorithm->computePartialPoseCovariance(spinv, blockIndices);
+  bool SparseOptimizer::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing) {
+    return _algorithm->computePartialPoseCovariance(spinv, blockIndices, useForcing);
   }
 
 /*  void SparseOptimizer::setPoseCovarianceOutput(MatrixXd& poseCovariance)

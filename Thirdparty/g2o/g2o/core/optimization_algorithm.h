@@ -82,7 +82,7 @@ namespace g2o {
       // DEBUG(alexmillane)
       virtual bool saveHessiansToFile(const std::string& fileNameStart) const { return false; }
       virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
-      virtual bool computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices) { return false; }
+      virtual bool computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing = false) { return false; }
 
      public:
       //! return the optimizer operating on

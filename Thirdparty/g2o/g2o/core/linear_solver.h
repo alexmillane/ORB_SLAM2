@@ -91,6 +91,10 @@ class LinearSolver
       return false;
     }
 
+    virtual bool solvePatternWithForcing(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, const SparseBlockMatrix<MatrixType>& A) {
+      return false;
+    }
+
     //! write a debug dump of the system matrix if it is not PSD in solve
     virtual bool writeDebug() const { return false;}
     virtual void setWriteDebug(bool) {}

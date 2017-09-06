@@ -754,11 +754,12 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
         mbRunningGBA = false;
 
         // Storing the Pose covariance if calculated
+        // TODO(alexmillane): This is long since not needed. Clean this up.
         if (calculatePoseCovarianceMatrix) {
             mpDenseMappingInterface->storePoseCovarianceMatrix(poseCavarianceMatrix, KFidToHessianCol);
         }
         // Notifying the dense mapping system that a global bundle adjustment has occurred.
-        mpDenseMappingInterface->notifyFinishedGBA();
+        //mpDenseMappingInterface->notifyFinishedGBA();
     }
 }
 

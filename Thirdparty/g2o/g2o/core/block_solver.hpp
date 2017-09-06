@@ -718,7 +718,7 @@ bool BlockSolver<Traits>::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
 }
 
 template <typename Traits>
-bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices)
+bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing)
 {
   // If not computing by schur's compliment this function will not work.
   if (!_doSchur)
@@ -737,9 +737,15 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   /*----------------------------------------------
    * USING THE CHOLMOD SOLVER ORDERING
    *----------------------------------------------*/
-  //std::cout << "Getting the sparse inverse with CHOLMOD." << std::endl;
-  //return _linearSolver->solvePattern(spinv, blockIndices, *_Hschur);
-  //_linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor, &P);
+  std::cout << "Getting the sparse inverse with CHOLMOD." << std::endl;
+  double t=get_monotonic_time();
+  bool success;
+  if (!useForcing) {
+    return _linearSolver->solvePattern(spinv, blockIndices, *_Hschur);
+  } else {
+    return _linearSolver->solvePatternWithForcing(spinv, blockIndices, *_Hschur);
+  }
+  cerr << "Partial Covariance [extract factor] = " <<  get_monotonic_time()-t << endl;
 
   /*----------------------------------------------
    * USING THE EIGEN SOLVER
@@ -748,7 +754,8 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   // TODO(alexmillane): Returning a pure sparse matrix introduces a dependency on Eigen Sparse Matrix
   //                    up the entire chain. Would be good to move to block based reordering and return
   //                    a factor which is a sparse block matrix.
-  std::cout << "Getting the cholesky factor" << std::endl;
+  // TODO(alexmillane): The solution to the above problem is simply to move this code inside the eigen solver.
+/*  std::cout << "Getting the cholesky factor" << std::endl;
   Eigen::SparseMatrix<double, Eigen::ColMajor> cholesky_factor;
   Eigen::PermutationMatrix<Eigen::Dynamic> P;
   _linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor, &P);
@@ -802,7 +809,7 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
       "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
       "covariance/computed_indicator";
   io::writeMatlab(indicator_filename.c_str(), computedIndicator);
-
+*/
 }
 
 } // end namespace
