@@ -68,7 +68,7 @@ class System {
   // Returns the camera pose (empty if tracking fails).
   cv::Mat TrackStereo(const cv::Mat& imLeft, const cv::Mat& imRight,
                       const double& timestamp, bool* keyframe_flag,
-                      bool* big_change_flag);
+                      bool* pgo_flag, bool* gba_flag);
 
   // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
   // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to
@@ -92,7 +92,7 @@ class System {
 
   // Returns true if there have been a big map change (loop closure, global BA)
   // since last call to this function
-  bool MapChanged();
+  //bool MapChanged();
 
   // Reset the system (clear map)
   void Reset();

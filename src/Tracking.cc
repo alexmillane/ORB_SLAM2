@@ -164,7 +164,7 @@ void Tracking::SetViewer(Viewer *pViewer)
 }
 
 
-cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp, bool* keyframe_indicator, bool* big_change_indicator)
+cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp, bool* keyframe_indicator, bool* pgo_flag, bool* gba_flag)
 {
     mImGray = imRectLeft;
     cv::Mat imGrayRight = imRectRight;
@@ -200,17 +200,24 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
 
     Track(keyframe_indicator);
 
-    // TODO(alex.millane): hacky place to do this but whatever
-    static int nBigChanges = 0;
-    if (nBigChanges < mpMap->GetLastBigChangeIdx()) {
-        nBigChanges = mpMap->GetLastBigChangeIdx();
-        *big_change_indicator = true;
-        std::cout << "Big change detected" << std::endl;
+    // Checking for new PGO or GBA
+    // TODO(alex.millane): hacky place to do this
+    static int nPGOIndex = 0;
+    if (nPGOIndex < mpMap->GetLastBigChangeIdxPGO()) {
+        nPGOIndex = mpMap->GetLastBigChangeIdxPGO();
+        *pgo_flag = true;
+        std::cout << "Pose graph optimization detected" << std::endl;
+    } else {
+        *pgo_flag = false;
     }
-    else {
-        *big_change_indicator = false;
+    static int nGBAIndex = 0;
+    if (nGBAIndex < mpMap->GetLastBigChangeIdxGBA()) {
+        nGBAIndex = mpMap->GetLastBigChangeIdxGBA();
+        *gba_flag = true;
+        std::cout << "Global bundle adjustment optimization detected" << std::endl;
+    } else {
+        *gba_flag = false;
     }
-
 
     return mCurrentFrame.mTcw.clone();
 }

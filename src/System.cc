@@ -125,7 +125,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
                             const double &timestamp, bool *keyframe_flag,
-                            bool *big_change_flag) {
+                            bool* pgo_flag, bool* gba_flag) {
   if (mSensor != STEREO) {
     cerr << "ERROR: you called TrackStereo but input sensor was not set to "
             "STEREO."
@@ -164,7 +164,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
   }
 
   cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp,
-                                           keyframe_flag, big_change_flag);
+                                           keyframe_flag, pgo_flag, gba_flag);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
@@ -278,7 +278,7 @@ void System::DeactivateLocalizationMode() {
   mbDeactivateLocalizationMode = true;
 }
 
-bool System::MapChanged() {
+/*bool System::MapChanged() {
   static int n = 0;
   int curn = mpMap->GetLastBigChangeIdx();
   if (n < curn) {
@@ -286,7 +286,7 @@ bool System::MapChanged() {
     return true;
   } else
     return false;
-}
+}*/
 
 void System::Reset() {
   unique_lock<mutex> lock(mMutexReset);

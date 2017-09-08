@@ -566,7 +566,7 @@ void LoopClosing::CorrectLoop()
     // Optimize graph
     Optimizer::OptimizeEssentialGraph(mpMap, mpMatchedKF, mpCurrentKF, NonCorrectedSim3, CorrectedSim3, LoopConnections, mbFixScale);
 
-    mpMap->InformNewBigChange();
+    mpMap->InformNewBigChangePGO();
 
     // Add loop edge
     mpMatchedKF->AddLoopEdge(mpCurrentKF);
@@ -743,7 +743,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
                 }
             }            
 
-            mpMap->InformNewBigChange();
+            mpMap->InformNewBigChangeGBA();
 
             mpLocalMapper->Release();
 
