@@ -27,7 +27,7 @@
 #ifndef G2O_LINEAR_SOLVER_EIGEN_H
 #define G2O_LINEAR_SOLVER_EIGEN_H
 
-#include <Eigen/Sparse>
+//#include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
 
 #include "../core/linear_solver.h"
@@ -160,10 +160,10 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
 
 
       // Doing the solve
-      *AInv = _cholesky.solve(I);
+      //*AInv = _cholesky.solve(I);
 
       // Solve
-      return true;
+      return false;
     }
 
     // TODO(alexmillane): This mean that the above classes need the concept of an eigen sparse matrix.. Not good.
