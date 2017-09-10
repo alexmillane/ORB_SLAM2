@@ -167,7 +167,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     }
 
     // TODO(alexmillane): This mean that the above classes need the concept of an eigen sparse matrix.. Not good.
-    bool getCholeskyFactor(
+/*    bool getCholeskyFactor(
         const SparseBlockMatrix<MatrixType>& A,
         Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr,
         Eigen::PermutationMatrix<Eigen::Dynamic>* P_ptr) {
@@ -204,14 +204,8 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       //std::cout << "D_diag_sqrt: " << std::endl << D_diag_sqrt << std::endl;
       //std::cout << "D_sqrt: " << std::endl << D_sqrt << std::endl;
       //std::cout << "P_indices: " << std::endl << P_ptr->indices() << std::endl;
-
-/*      // Testing the pointer to underlying data
-      int* int_ptr = P_ptr->indices().data();
-      for (size_t i = 0; i < P_ptr->rows(); i++) {
-        std::cout << "int_ptr[i]: " << int_ptr[i] << std::endl;
-      }*/
     }
-
+*/
     //! do the AMD ordering on the blocks or on the scalar matrix
     bool blockOrdering() const { return _blockOrdering;}
     void setBlockOrdering(bool blockOrdering) { _blockOrdering = blockOrdering;}

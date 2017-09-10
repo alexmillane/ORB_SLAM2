@@ -30,7 +30,7 @@
 #include "sparse_block_matrix_ccs.h"
 
 // NOTE(alexmillane): Had to introduce this to be able to return the cholesky factor
-#include <Eigen/Sparse>
+//#include <Eigen/Sparse>
 
 namespace g2o {
 
@@ -84,12 +84,12 @@ class LinearSolver
       return false;
     }
 
-    virtual bool getCholeskyFactor(
+/*    virtual bool getCholeskyFactor(
         const SparseBlockMatrix<MatrixType>& A,
         Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr,
         Eigen::PermutationMatrix<Eigen::Dynamic>* P_ptr) {
       return false;
-    }
+    }*/
 
     virtual bool solvePatternWithForcing(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, const SparseBlockMatrix<MatrixType>& A) {
       return false;
