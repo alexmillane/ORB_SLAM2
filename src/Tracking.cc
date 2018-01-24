@@ -223,7 +223,7 @@ cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRe
 }
 
 
-cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, bool* keyframe_indicator)
+cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, bool* keyframe_indicator, bool* pgo_flag, bool* gba_flag)
 {
     mImGray = imRGB;
     cv::Mat imDepth = imD;
@@ -249,6 +249,25 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
     Track(keyframe_indicator);
+
+    // Checking for new PGO or GBA
+    // TODO(alex.millane): hacky place to do this
+    static int nPGOIndex = 0;
+    if (nPGOIndex < mpMap->GetLastBigChangeIdxPGO()) {
+        nPGOIndex = mpMap->GetLastBigChangeIdxPGO();
+        *pgo_flag = true;
+        std::cout << "Pose graph optimization detected" << std::endl;
+    } else {
+        *pgo_flag = false;
+    }
+    static int nGBAIndex = 0;
+    if (nGBAIndex < mpMap->GetLastBigChangeIdxGBA()) {
+        nGBAIndex = mpMap->GetLastBigChangeIdxGBA();
+        *gba_flag = true;
+        std::cout << "Global bundle adjustment optimization detected" << std::endl;
+    } else {
+        *gba_flag = false;
+    }
 
     return mCurrentFrame.mTcw.clone();
 }
