@@ -174,7 +174,8 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
 }
 
 cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
-                          const double &timestamp, bool* keyframe_flag) {
+                          const double &timestamp, bool* keyframe_flag,
+                          bool* pgo_flag, bool* gba_flag) {
   if (mSensor != RGBD) {
     cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD."
          << endl;
@@ -211,7 +212,8 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap,
     }
   }
 
-  cv::Mat Tcw = mpTracker->GrabImageRGBD(im, depthmap, timestamp, keyframe_flag);
+  cv::Mat Tcw = mpTracker->GrabImageRGBD(im, depthmap, timestamp, 
+                                         keyframe_flag, pgo_flag, gba_flag);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;

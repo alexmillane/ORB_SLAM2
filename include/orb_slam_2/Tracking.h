@@ -59,7 +59,7 @@ public:
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
     cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, bool* keyframe_indicator, bool* pgo_flag, bool* gba_flag);
-    cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, bool* keyframe_indicator);
+    cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, bool* keyframe_indicator, bool* pgo_flag, bool* gba_flag);
     cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp, bool* keyframe_indicator);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
