@@ -21,5 +21,6 @@
   <depend>minkindr</depend>
   <depend>minkindr_conversions</depend>
   <depend>eigen_conversions</depend>
+  <depend>pangolin_catkin</depend>
 
 </package>
