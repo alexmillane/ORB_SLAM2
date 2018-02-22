@@ -259,7 +259,7 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
     virtual bool solvePatternWithForcing(SparseBlockMatrix<MatrixXD>& spinv, const std::vector<std::pair<int, int> >& blockIndices, const SparseBlockMatrix<MatrixType>& A)
     {
       //DEBUG
-      std::cout << "CHOLMOD: Solving pattern with forcing" << std::endl;
+      //std::cout << "[CHOLMOD: Solving pattern with forcing" << std::endl;
 
       //cerr << __PRETTY_FUNCTION__ << " using cholmod" << endl;
       fillCholmodExt(A, _cholmodFactor != 0); // _cholmodFactor used as bool, if not existing will copy the whole structure, otherwise only the values
@@ -286,7 +286,6 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
       computeSymbolicDecompositionWithBlockForcing(A, blocks);
       assert(_cholmodFactor && "Symbolic cholesky failed");
 
-      std::cout << "Cholmod factorize" << std::endl;
       cholmod_factorize(_cholmodSparse, _cholmodFactor, &_cholmodCommon);
       if (_cholmodCommon.status == CHOLMOD_NOT_POSDEF)
         return false;
@@ -305,10 +304,12 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
         pinv(p[i]) = i;
 
       // compute the marginal covariance
+      //std::cout << "About to do marginal covariance" << std::endl;
       MarginalCovarianceCholesky mcc;
       mcc.setCholeskyFactor(_cholmodSparse->ncol, (int*)_cholmodFactor->p, (int*)_cholmodFactor->i,
           (double*)_cholmodFactor->x, pinv.data());
       mcc.computeCovariance(spinv, A.rowBlockIndices(), blockIndices);
+      //std::cout << "Finished marginal covariance" << std::endl;
 
       // Saving what has been computed to file
       constexpr bool saveComputedIndices = false;
@@ -430,7 +431,7 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
     {
       double t = get_monotonic_time();
 
-      std::cout << "[CHOLMOD]: DOING BLOCK BASED REORDERING WITH FORCING." << std::endl;
+      //std::cout << "[CHOLMOD]: DOING BLOCK BASED REORDERING WITH FORCING." << std::endl;
 
       A.fillBlockStructure(_matrixStructure);
 
@@ -462,7 +463,7 @@ class LinearSolverCholmod : public LinearSolverCCS<MatrixType>
       std::fill(cMemberVector.begin(), cMemberVector.end(), 0);
       for (const int blockIndex : blockIndices) {
         cMemberVector[blockIndex] = 1;
-        std::cout << "blockIndex = " << blockIndex << " = 1" << std::endl;
+        //std::cout << "blockIndex = " << blockIndex << " = 1" << std::endl;
       }
 
       // Doing the constrained reordering
