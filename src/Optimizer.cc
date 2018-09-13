@@ -37,6 +37,8 @@
 namespace ORB_SLAM2
 {
 
+bool Optimizer::_covReady;
+std::shared_ptr<std::pair<std::vector<long unsigned int>, Eigen::SparseMatrix<double, Eigen::ColMajor>>> Optimizer::_covInfoPtr;
 
 void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
 {
@@ -183,9 +185,24 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         }
     }
 
+    //setup storage for covariance info
+    std::shared_ptr<std::pair<std::vector<long unsigned int>, Eigen::SparseMatrix<double, Eigen::ColMajor>>> tempCovInfoPtr;
+    tempCovInfoPtr = std::make_shared<std::pair<std::vector<long unsigned int>, Eigen::SparseMatrix<double, Eigen::ColMajor>>>();
+
     // Optimize!
     optimizer.initializeOptimization();
+    linearSolver->setCovarianceMatrixPtr(&(tempCovInfoPtr->second));
     optimizer.optimize(nIterations);
+
+    //record which id goes with each vertex
+    std::vector<g2o::OptimizableGraph::Vertex*> verts = optimizer.indexMapping();
+    for(size_t i = 0; i < verts.size(); ++i){
+        tempCovInfoPtr->first.push_back(verts[i]->id());
+    }
+
+    //swap temp pointer (done to prevent race conditions)
+    _covInfoPtr.swap(tempCovInfoPtr);
+    _covReady = true;
 
     // Recover optimized data
 
@@ -233,7 +250,6 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             pMP->mnBAGlobalForKF = nLoopKF;
         }
     }
-
 }
 
 int Optimizer::PoseOptimization(Frame *pFrame)
@@ -1240,5 +1256,10 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     return nIn;
 }
 
+std::shared_ptr<std::pair<std::vector<long unsigned int>,
+                          Eigen::SparseMatrix<double, Eigen::ColMajor>>>
+Optimizer::getCovInfo() {
+  return _covInfoPtr;
+}
 
 } //namespace ORB_SLAM

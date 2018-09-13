@@ -77,7 +77,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
   public:
     LinearSolverEigen() :
       LinearSolver<MatrixType>(),
-      _init(true), _blockOrdering(false), _writeDebug(false)
+      _init(true), _blockOrdering(false), _writeDebug(false), _updateAtA(false)
     {
     }
 
@@ -110,6 +110,13 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         return false;
       }
 
+      if(_updateAtA){
+        //rebuild in case the order has been messed with
+        fillSparseMatrix(A, false);
+        *_AtAPtr = _sparseMatrix.transpose() * _sparseMatrix;
+        _updateAtA = false;
+      }
+
       // Solving the system
       VectorXD::MapType xx(x, _sparseMatrix.cols());
       VectorXD::ConstMapType bb(b, _sparseMatrix.cols());
@@ -120,6 +127,12 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         globalStats->choleskyNNZ = _cholesky.matrixL().nestedExpression().nonZeros() + _sparseMatrix.cols(); // the elements of D
       }
 
+      return true;
+    }
+
+    virtual bool setCovarianceMatrixPtr(Eigen::SparseMatrix<double, Eigen::ColMajor>* AtAPtr){
+      _AtAPtr = AtAPtr;
+      _updateAtA = true;
       return true;
     }
 
@@ -135,6 +148,8 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     bool _init;
     bool _blockOrdering;
     bool _writeDebug;
+    bool _updateAtA;
+    SparseMatrix* _AtAPtr;
     SparseMatrix _sparseMatrix;
     CholeskyDecomposition _cholesky;
 

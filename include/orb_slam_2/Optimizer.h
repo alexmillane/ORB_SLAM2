@@ -27,6 +27,8 @@
 #include "orb_slam_2/LoopClosing.h"
 #include "orb_slam_2/Frame.h"
 
+#include <Eigen/Sparse>
+
 #include "g2o/types/types_seven_dof_expmap.h"
 
 namespace ORB_SLAM2
@@ -55,6 +57,13 @@ public:
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
                             g2o::Sim3 &g2oS12, const float th2, const bool bFixScale);
+
+    std::shared_ptr<std::pair<std::vector<long unsigned int>, Eigen::SparseMatrix<double, Eigen::ColMajor>>> static getCovInfo();
+
+private:
+  static bool _covReady;
+
+  static std::shared_ptr<std::pair<std::vector<long unsigned int>, Eigen::SparseMatrix<double, Eigen::ColMajor>>> _covInfoPtr;
 };
 
 } //namespace ORB_SLAM
