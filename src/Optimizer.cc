@@ -60,12 +60,12 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
     // CHOLMOD
-    g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>* linear_solver_cholmod = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
-    linear_solver_cholmod->setBlockOrdering(true);
-    linearSolver = static_cast<g2o::LinearSolver<g2o::BlockSolver_6_3::PoseMatrixType>*>(linear_solver_cholmod);
+    //g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>* linear_solver_cholmod = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+    //linear_solver_cholmod->setBlockOrdering(true);
+    //linearSolver = static_cast<g2o::LinearSolver<g2o::BlockSolver_6_3::PoseMatrixType>*>(linear_solver_cholmod);
     
     // EIGEN
-    //linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
+    linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
 
     g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
 

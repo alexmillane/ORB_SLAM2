@@ -760,12 +760,13 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   /*----------------------------------------------
    * USING THE EIGEN SOLVER
    *----------------------------------------------*/
+  /*
   // Getting the cholesky factor
   // TODO(alexmillane): Returning a pure sparse matrix introduces a dependency on Eigen Sparse Matrix
   //                    up the entire chain. Would be good to move to block based reordering and return
   //                    a factor which is a sparse block matrix.
   // TODO(alexmillane): The solution to the above problem is simply to move this code inside the eigen solver.
-/*  std::cout << "Getting the cholesky factor" << std::endl;
+  std::cout << "Getting the cholesky factor" << std::endl;
   Eigen::SparseMatrix<double, Eigen::ColMajor> cholesky_factor;
   Eigen::PermutationMatrix<Eigen::Dynamic> P;
   _linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor, &P);
@@ -795,8 +796,8 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   // Getting the computed elements of the cholesky factor
   Eigen::MatrixXd computedIndicator;
   marginal_covariance_cholesky.getComputedIndices(computedIndicator);
-
-  // Printing the result
+  */
+/*  // Printing the result
   std::cout << "spinv: " << std::endl << spinv << std::endl;
 
   // Saving the cholesky factor
@@ -818,8 +819,8 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   const std::string indicator_filename =
       "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
       "covariance/computed_indicator";
-  io::writeMatlab(indicator_filename.c_str(), computedIndicator);
-*/
+  io::writeMatlab(indicator_filename.c_str(), computedIndicator);*/
+
 }
 
 } // end namespace
