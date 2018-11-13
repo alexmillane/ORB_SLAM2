@@ -79,7 +79,12 @@ namespace g2o {
        */
       virtual void printVerbose(std::ostream& os) const {(void) os;};
 
-    public:
+      // DEBUG(alexmillane)
+      virtual bool saveHessiansToFile(const std::string& fileNameStart) const { return false; }
+      virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance) { return false; }
+      virtual bool computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing = false) { return false; }
+
+     public:
       //! return the optimizer operating on
       const SparseOptimizer* optimizer() const { return _optimizer;}
       SparseOptimizer* optimizer() { return _optimizer;}

@@ -388,6 +388,8 @@ namespace g2o{
       result = _algorithm->solve(i, online);
       ok = ( result == OptimizationAlgorithm::OK );
 
+
+
       bool errorComputed = false;
       if (_computeBatchStatistics) {
         computeActiveErrors();
@@ -415,6 +417,7 @@ namespace g2o{
     if (result == OptimizationAlgorithm::Fail) {
       return 0;
     }
+
     return cjIterations;
   }
 
@@ -530,9 +533,9 @@ namespace g2o{
     for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it) {
       OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*>(*it);
       if (v)
-	v->push();
+  v->push();
       else 
-	cerr << __FUNCTION__ << ": FATAL PUSH SET" << endl;
+  cerr << __FUNCTION__ << ": FATAL PUSH SET" << endl;
     }
   }
 
@@ -541,9 +544,9 @@ namespace g2o{
     for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it){
       OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*> (*it);
       if (v)
-	v->pop();
+  v->pop();
       else 
-	cerr << __FUNCTION__ << ": FATAL POP SET" << endl;
+  cerr << __FUNCTION__ << ": FATAL POP SET" << endl;
     }
   }
 
@@ -557,6 +560,28 @@ namespace g2o{
   {
     _verbose = verbose;
   }
+
+  void SparseOptimizer::saveHessiansToFile(const std::string& filePath)
+  {
+    // Saving the Hessians
+    if (_algorithm)
+      _algorithm->saveHessiansToFile(filePath);
+  }
+
+  bool SparseOptimizer::computePoseCovariance(MatrixXd& poseCovariance) {
+    return _algorithm->computePoseCovariance(poseCovariance);
+  }
+
+  bool SparseOptimizer::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing) {
+    return _algorithm->computePartialPoseCovariance(spinv, blockIndices, useForcing);
+  }
+
+/*  void SparseOptimizer::setPoseCovarianceOutput(MatrixXd& poseCovariance)
+  {
+    // Setting the destination and indicating that we're fine to store stuff there.
+    _poseCovariance = &poseCovariance;
+    _poseCovarianceDestinationSet = true;
+  }*/
 
   void SparseOptimizer::setAlgorithm(OptimizationAlgorithm* algorithm)
   {

@@ -98,4 +98,19 @@ namespace g2o {
     _writeDebug->setValue(writeDebug);
   }
 
+  bool OptimizationAlgorithmWithHessian::saveHessiansToFile(const std::string& fileNameStart) const
+  {
+    return _solver ? _solver->saveHessiansToFile(fileNameStart) : false;
+  }
+
+  bool OptimizationAlgorithmWithHessian::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
+  {
+    return _solver ? _solver->computePoseCovariance(poseCovariance) : false;
+  }
+
+  bool OptimizationAlgorithmWithHessian::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing)
+  {
+    return _solver ? _solver->computePartialPoseCovariance(spinv, blockIndices, useForcing) : false;
+  }
+
 } // end namespace

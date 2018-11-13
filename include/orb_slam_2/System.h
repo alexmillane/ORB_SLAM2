@@ -28,6 +28,8 @@
 
 #include <Eigen/StdVector>
 
+#include "g2o/core/sparse_optimizer.h"
+
 #include "orb_slam_2/DenseMappingInterface.h"
 #include "orb_slam_2/FrameDrawer.h"
 #include "orb_slam_2/KeyFrameDatabase.h"
@@ -66,7 +68,7 @@ class System {
   // Returns the camera pose (empty if tracking fails).
   cv::Mat TrackStereo(const cv::Mat& imLeft, const cv::Mat& imRight,
                       const double& timestamp, bool* keyframe_flag,
-                      bool* big_change_flag);
+                      bool* pgo_flag, bool* gba_flag);
 
   // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
   // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to
@@ -90,7 +92,7 @@ class System {
 
   // Returns true if there have been a big map change (loop closure, global BA)
   // since last call to this function
-  bool MapChanged();
+  //bool MapChanged();
 
   // Reset the system (clear map)
   void Reset();
@@ -129,16 +131,40 @@ class System {
   std::vector<MapPoint*> GetTrackedMapPoints();
   std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
+  // DEBUG(alexmillane): Functions below are mine
+  // ----------------------------------------------------------------
+  
   // Functions related to trajectory publishing
   bool isUpdatedTrajectoryAvailable();
   std::vector<PoseWithID> GetUpdatedTrajectory();
 
-  // Functions related to trajectory publishing
-  bool isKeyFrameStatusAvailable();
-  bool getKeyFrameStatus();
-
   // Returns the last frame 
   long unsigned int getLastKeyFrameID();
+
+  // Kicks off global bundle adjustment
+  bool startGlobalBundleAdjustment();
+
+  // Functions to do with patch base frames (direct feedthrough to dense mapping interface).
+  // TODO(alexmillane): THESE SHOULD BE REMOVED WHEN FUNCTIONALITY MOVES TO THE MAP MAINTAINER
+  bool addKeyframeAsPatchBaseframe(unsigned long KFid);
+  bool getPatchBaseFramePosesAndCovariances(
+      std::vector<cv::Mat>* patchPoses,
+      std::vector<Eigen::Matrix<double, 6, 6>,
+                  Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>>*
+          patchConditionalCovariances);
+
+  // DEBUG(alexmillane)
+  // THESE ARE LIKELY ONLY NEEDED FOR TESTING
+  void removeAllKeyframesAsPatchBaseFrames();
+  void getCurrentKeyframeIds(std::vector<unsigned long>* KFids);
+
+  // Keyframe interactions
+  void getKeyFrames(std::vector<KeyFrame*>* pKFs);
+  bool getKeyframePosesById(const std::vector<unsigned long>& KFids,
+                            std::vector<cv::Mat>* KFposes);
+
+  // Gets the g2o optimizer object used in the last Global Bundle Adjustment
+  std::shared_ptr<g2o::SparseOptimizer> getLastGBAOptimizer();
 
  private:
   // Input sensor

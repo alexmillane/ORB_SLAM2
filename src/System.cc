@@ -26,6 +26,7 @@
 #include "orb_slam_2/Converter.h"
 #include "orb_slam_2/DenseMappingInterface.h"
 #include "orb_slam_2/System.h"
+#include "orb_slam_2/Optimizer.h"
 
 namespace ORB_SLAM2 {
 
@@ -124,7 +125,7 @@ System::System(const string &strVocFile, const string &strSettingsFile,
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
                             const double &timestamp, bool *keyframe_flag,
-                            bool *big_change_flag) {
+                            bool* pgo_flag, bool* gba_flag) {
   if (mSensor != STEREO) {
     cerr << "ERROR: you called TrackStereo but input sensor was not set to "
             "STEREO."
@@ -163,7 +164,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight,
   }
 
   cv::Mat Tcw = mpTracker->GrabImageStereo(imLeft, imRight, timestamp,
-                                           keyframe_flag, big_change_flag);
+                                           keyframe_flag, pgo_flag, gba_flag);
 
   unique_lock<mutex> lock2(mMutexState);
   mTrackingState = mpTracker->mState;
@@ -277,7 +278,7 @@ void System::DeactivateLocalizationMode() {
   mbDeactivateLocalizationMode = true;
 }
 
-bool System::MapChanged() {
+/*bool System::MapChanged() {
   static int n = 0;
   int curn = mpMap->GetLastBigChangeIdx();
   if (n < curn) {
@@ -285,7 +286,7 @@ bool System::MapChanged() {
     return true;
   } else
     return false;
-}
+}*/
 
 void System::Reset() {
   unique_lock<mutex> lock(mMutexReset);
@@ -487,16 +488,87 @@ std::vector<PoseWithID> System::GetUpdatedTrajectory() {
   return mpDenseMappingInterface->getUpdatedTrajectory();
 }
 
-bool System::isKeyFrameStatusAvailable() {
-  return mpDenseMappingInterface->isKeyFrameStatusAvailable();
-}
-
-bool System::getKeyFrameStatus() {
-  return mpDenseMappingInterface->getKeyFrameStatus();
-}
-
 long unsigned int System::getLastKeyFrameID() {
   return mpTracker->getLastKeyFrameID();
+}
+
+bool System::startGlobalBundleAdjustment() {
+  // Starting the global bundle adjustment and subsequent map correction.
+  // NOTE(alex.millane): I guess the loop closer is the right place for this.
+  mpLoopCloser->RunGlobalBundleAdjustmentWithoutLoop();
+  // Success
+  return true;
+}
+
+bool System::addKeyframeAsPatchBaseframe(unsigned long KFid) {
+  return mpDenseMappingInterface->addKeyframeAsPatchBaseframe(KFid);
+}
+
+void System::removeAllKeyframesAsPatchBaseFrames() {
+  return mpDenseMappingInterface->removeAllKeyframesAsPatchBaseFrames();
+}
+
+void System::getCurrentKeyframeIds(std::vector<unsigned long> *KFids) {
+  // Getting the keyframes forming the map
+  std::vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+  // Sort the keyframes according to their ID
+  // DEBUG(alexmillane): I assume the caller wants sorted frames.
+  std::sort(vpKFs.begin(), vpKFs.end(),
+            [](KeyFrame const* kf1, KeyFrame const* kf2) {
+              return (kf1->mnId) < (kf2->mnId);
+            });
+  // Storing the keyframe ids
+  KFids->clear();
+  KFids->reserve(vpKFs.size());
+  for (KeyFrame* pKF : vpKFs) {
+    KFids->push_back(pKF->mnId);
+  }
+}
+
+bool System::getPatchBaseFramePosesAndCovariances(
+    std::vector<cv::Mat> *patchPoses,
+    std::vector<Eigen::Matrix<double, 6, 6>,
+                Eigen::aligned_allocator<Eigen::Matrix<double, 6, 6>>>
+        *patchConditionalCovariances) {
+  return mpDenseMappingInterface->getPatchBaseFramePosesAndCovariances(
+      *patchPoses, *patchConditionalCovariances);
+}
+
+bool System::getKeyframePosesById(const std::vector<unsigned long> &KFids,
+                                  std::vector<cv::Mat> *KFposes) {
+  // Argument
+  KFposes->clear();
+  KFposes->reserve(KFids.size());
+  // Getting the keyframes in the map
+  vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+  // Looping over the keyframes and extracting their poses.
+  // NOTE(alexmillane): I have made no assumptions about the order of either the
+  //                    keyframes or the passed list.
+  for (const auto KFid : KFids) {
+    bool matchFound = false;
+    for (KeyFrame* pKF : vpKFs ) {
+      if ( pKF->mnId == KFid ) {
+        std::cout << "Keyframe: " << KFid << " found in the map " << std::endl;
+        KFposes->emplace_back(pKF->GetPose());
+        matchFound = true;
+        break;
+      }
+    }
+    if (!matchFound) {
+      std::cout << "Failed to find keyframe in the map" << std::endl;
+      return false;
+    }
+
+  }
+  return true;
+}
+
+std::shared_ptr<g2o::SparseOptimizer> System::getLastGBAOptimizer() {
+  return Optimizer::getLastGBAOptimizer();
+}
+
+void System::getKeyFrames(std::vector<KeyFrame*>* vpKFs) {
+  *vpKFs = mpMap->GetAllKeyFrames();
 }
 
 }  // namespace ORB_SLAM

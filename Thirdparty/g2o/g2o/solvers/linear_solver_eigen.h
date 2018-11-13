@@ -63,6 +63,12 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         CholeskyDecomposition() : Eigen::SimplicialLDLT<SparseMatrix, Eigen::Upper>() {}
         using Eigen::SimplicialLDLT< SparseMatrix, Eigen::Upper>::analyzePattern_preordered;
 
+/*    class CholeskyDecomposition : public Eigen::SimplicialLLT<SparseMatrix, Eigen::Upper>
+    {
+      public:
+        CholeskyDecomposition() : Eigen::SimplicialLLT<SparseMatrix, Eigen::Upper>() {}
+        using Eigen::SimplicialLLT< SparseMatrix, Eigen::Upper>::analyzePattern_preordered;
+*/
         void analyzePatternWithPermutation(SparseMatrix& a, const PermutationMatrix& permutation)
         {
           m_Pinv = permutation;
@@ -91,7 +97,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       return true;
     }
 
-    bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b)
+    bool preSolve(const SparseBlockMatrix<MatrixType>& A, double* t) 
     {
       if (_init)
         _sparseMatrix.resize(A.rows(), A.cols());
@@ -100,7 +106,7 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         computeSymbolicDecomposition(A);
       _init = false;
 
-      double t=get_monotonic_time();
+      *t=get_monotonic_time();
       _cholesky.factorize(_sparseMatrix);
       if (_cholesky.info() != Eigen::Success) { // the matrix is not positive definite
         if (_writeDebug) {
@@ -109,11 +115,24 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
         }
         return false;
       }
+    }
+
+    bool solve(const SparseBlockMatrix<MatrixType>& A, double* x, double* b)
+    {
+      // NOTE(alexmillane): Put this in a function so I can use the presolve
+      //                    steps elsewhere.
+      // Factorize
+      double t;
+      if (!preSolve(A, &t)) {
+        return false;
+      }
 
       // Solving the system
       VectorXD::MapType xx(x, _sparseMatrix.cols());
       VectorXD::ConstMapType bb(b, _sparseMatrix.cols());
       xx = _cholesky.solve(bb);
+
+      // Stats
       G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
       if (globalStats) {
         globalStats->timeNumericDecomposition = get_monotonic_time() - t;
@@ -121,6 +140,76 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
       }
 
       return true;
+    }
+
+    bool solveInverse(const SparseBlockMatrix<MatrixType>& A, Eigen::MatrixXd* AInv)
+    {
+      // DEBUG (alexmillane)
+      std::cout << "In alex's solve inverse function." << std::endl;
+
+      // Factorize
+      double t;
+      if (!preSolve(A, &t)) {
+        return false;
+      }
+
+      // Allocating the identity
+      int size = A.cols();
+      SparseMatrix I(size, size);
+      I.setIdentity();
+
+
+      // Doing the solve
+      *AInv = _cholesky.solve(I);
+
+      // Solve
+      return true;
+    }
+
+    // TODO(alexmillane): This mean that the above classes need the concept of an eigen sparse matrix.. Not good.
+    bool getCholeskyFactor(
+        const SparseBlockMatrix<MatrixType>& A,
+        Eigen::SparseMatrix<double, Eigen::ColMajor>* factor_ptr,
+        Eigen::PermutationMatrix<Eigen::Dynamic>* P_ptr) {
+      // DEBUG (alexmillane)
+      //std::cout << "Getting cholesky factor." << std::endl;
+
+      // Factorize
+      double t;
+      if (!preSolve(A, &t)) {
+        return false;
+      }
+
+      // Cholesky factor - Get L - (LDLT factorization)
+      Eigen::SparseMatrix<double, Eigen::ColMajor> L(_cholesky.matrixL());
+
+      // Cholesky factor - Get D - (LDLT factorization)
+      Eigen::VectorXd D_diag = _cholesky.vectorD();
+      Eigen::VectorXd D_diag_sqrt = D_diag.cwiseSqrt();
+      Eigen::SparseMatrix<double, Eigen::ColMajor> D_sqrt(A.rows(), A.rows());
+      std::vector<Eigen::Triplet<double>> triplets;
+      for (size_t i = 0; i < D_diag_sqrt.size(); i++) {
+        triplets.emplace_back(Eigen::Triplet<double>(i, i, D_diag_sqrt[i]));
+      }
+      D_sqrt.setFromTriplets(triplets.begin(), triplets.end());
+
+      // Factor Output
+      *factor_ptr = L * D_sqrt;
+
+      // Cholesky factor - Get P - (LDLT factorization)
+      *P_ptr = _cholesky.permutationP();
+
+      // DEBUG
+      //std::cout << "D_diag: " << std::endl << D_diag << std::endl;
+      //std::cout << "D_diag_sqrt: " << std::endl << D_diag_sqrt << std::endl;
+      //std::cout << "D_sqrt: " << std::endl << D_sqrt << std::endl;
+      //std::cout << "P_indices: " << std::endl << P_ptr->indices() << std::endl;
+
+/*      // Testing the pointer to underlying data
+      int* int_ptr = P_ptr->indices().data();
+      for (size_t i = 0; i < P_ptr->rows(); i++) {
+        std::cout << "int_ptr[i]: " << int_ptr[i] << std::endl;
+      }*/
     }
 
     //! do the AMD ordering on the blocks or on the scalar matrix
@@ -148,8 +237,10 @@ class LinearSolverEigen: public LinearSolver<MatrixType>
     {
       double t=get_monotonic_time();
       if (! _blockOrdering) {
+        //std::cout << "Computing ordering on the RAW matrix." << std::endl;
         _cholesky.analyzePattern(_sparseMatrix);
       } else {
+        //std::cout << "Computing ordering on the BLOCK matrix." << std::endl;
         // block ordering with the Eigen Interface
         // This is really ugly currently, as it calls internal functions from Eigen
         // and modifies the SparseMatrix class

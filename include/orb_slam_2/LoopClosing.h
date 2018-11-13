@@ -68,6 +68,9 @@ public:
     // This function will run in a separate thread
     void RunGlobalBundleAdjustment(unsigned long nLoopKF);
 
+    // DEBUG(alexmillane)
+    void RunGlobalBundleAdjustmentWithoutLoop();
+
     bool isRunningGBA(){
         unique_lock<std::mutex> lock(mMutexGBA);
         return mbRunningGBA;

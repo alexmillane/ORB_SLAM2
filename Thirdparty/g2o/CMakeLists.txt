@@ -25,6 +25,8 @@ if(MSVC90)
   message(STATUS "Disabling memory alignment for MSVC8")
 endif(MSVC90)
 
+#add_definitions(-DEIGEN_DONT_ALIGN_STATICALLY)
+
 # Set the output directory for the build executables and libraries
 #IF(WIN32)
 #  SET(g2o_LIBRARY_OUTPUT_DIRECTORY ${g2o_ROOT_DIR}/bin CACHE PATH "Target for the libraries")
@@ -60,9 +62,9 @@ ENDIF(OPENMP_FOUND AND G2O_USE_OPENMP)
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native") 
 SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -march=native") 
 
-# activate warnings !!!
-SET(g2o_C_FLAGS "${g2o_C_FLAGS} -Wall -W")
-SET(g2o_CXX_FLAGS "${g2o_CXX_FLAGS} -Wall -W")
+# activate warnings !!!  -Wall -W
+SET(g2o_C_FLAGS "${g2o_C_FLAGS} -w")
+SET(g2o_CXX_FLAGS "${g2o_CXX_FLAGS} -w")
 
 # specifying compiler flags
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${g2o_CXX_FLAGS}")
@@ -77,8 +79,21 @@ ELSE(EIGEN3_FOUND)
   SET(G2O_EIGEN3_INCLUDE "" CACHE PATH "Directory of Eigen3")
 ENDIF(EIGEN3_FOUND)
 
+# For building the CHOLMOD
+FIND_PACKAGE(Cholmod)
+FIND_PACKAGE(BLAS)
+FIND_PACKAGE(LAPACK)
+IF(CHOLMOD_FOUND AND BLAS_FOUND AND LAPACK_FOUND)
+  MESSAGE(WARNING "Found CHOLMOD and its dependencies")
+  SET(CHOLMOD_FOUND TRUE)
+ELSE()
+  MESSAGE(WARNING "Did not find CHOLMOD and its dependencies")
+  SET(CHOLMOD_FOUND FALSE)
+ENDIF()
+
 # Generate config.h
 SET(G2O_CXX_COMPILER "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER}")
+SET(G2O_HAVE_CHOLMOD ${CHOLMOD_FOUND})
 configure_file(${g2o_ROOT_DIR}/config.h.in ${g2o_ROOT_DIR}/config.h)
 
 # Set up the top-level include directories
@@ -86,7 +101,11 @@ INCLUDE_DIRECTORIES(
 ${g2o_CODE_DIR}/core
 ${g2o_CODE_DIR}/types
 ${g2o_CODE_DIR}/stuff 
-${G2O_EIGEN3_INCLUDE})
+${G2O_EIGEN3_INCLUDE}
+${CHOLMOD_INCLUDE_DIR})
+
+#ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/g2o)
+ADD_SUBDIRECTORY(${g2o_ROOT_DIR}/g2o/solvers)
 
 # Include the subdirectories
 add_library(g2o ${G2O_LIB_TYPE}
@@ -174,6 +193,11 @@ ${g2o_ROOT_DIR}/g2o/stuff/os_specific.h
 ${g2o_ROOT_DIR}/g2o/stuff/string_tools.cpp
 ${g2o_ROOT_DIR}/g2o/stuff/property.cpp       
 ${g2o_ROOT_DIR}/g2o/stuff/property.h       
+${g2o_ROOT_DIR}/g2o/stuff/sparse_helper.cpp    
+${g2o_ROOT_DIR}/g2o/stuff/sparse_helper.h       
+${g2o_ROOT_DIR}/g2o/stuff/g2o_stuff_api.h           
 )
+
+target_link_libraries(g2o solver_cholmod)
 
 #cs_install()

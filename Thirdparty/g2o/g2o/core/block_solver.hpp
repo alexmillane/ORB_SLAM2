@@ -33,6 +33,10 @@
 #include "../stuff/macros.h"
 #include "../stuff/misc.h"
 
+//DEBUG(alexmillane)
+#include "dense_matrix_io.h"
+#include "marginal_covariance_cholesky.h"
+
 namespace g2o {
 
 using namespace std;
@@ -51,6 +55,7 @@ BlockSolver<Traits>::BlockSolver(LinearSolverType* linearSolver) :
   _HschurTransposedCCS = 0;
   _Hschur=0;
   _DInvSchur=0;
+  //_HschurInv=0;
   _coefficients=0;
   _bschur = 0;
   _xSize=0;
@@ -59,6 +64,10 @@ BlockSolver<Traits>::BlockSolver(LinearSolverType* linearSolver) :
   _sizePoses=0;
   _sizeLandmarks=0;
   _doSchur=true;
+  _verbose= false;
+  _t_marginalize_cum = 0.0;
+  _t_solve_cum = 0.0;
+  _t_landmark_delta_cum = 0.0;
 }
 
 template <typename Traits>
@@ -369,6 +378,82 @@ bool BlockSolver<Traits>::solve(){
   // backup the coefficient matrix
   double t=get_monotonic_time();
 
+  // Updating the schur matrix _Hschur by marginalizing out the landmarks
+  updateSchur();
+
+  if (_verbose) {
+    double marginalize_time = get_monotonic_time()-t;
+    cerr << "Solve [marginalize] = " << marginalize_time << endl;
+    _t_marginalize_cum += marginalize_time;
+    cerr << "Cumulative [marginalize] = " << _t_marginalize_cum << endl;
+  }
+
+  // _bschur = _b for calling solver, and not touching _b
+  memcpy(_bschur, _b, _sizePoses * sizeof(double));
+  for (int i=0; i<_sizePoses; ++i){
+    _bschur[i]-=_coefficients[i];
+  }
+
+  G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
+  if (globalStats){
+    globalStats->timeSchurComplement = get_monotonic_time() - t;
+  }
+
+  t=get_monotonic_time();
+  bool solvedPoses = _linearSolver->solve(*_Hschur, _x, _bschur);
+  if (globalStats) {
+    globalStats->timeLinearSolver = get_monotonic_time() - t;
+    globalStats->hessianPoseDimension = _Hpp->cols();
+    globalStats->hessianLandmarkDimension = _Hll->cols();
+    globalStats->hessianDimension = globalStats->hessianPoseDimension + globalStats->hessianLandmarkDimension;
+  }
+  if (_verbose) {
+    double solve_time = get_monotonic_time()-t;
+    cerr << "Solve [decompose and solve] = " <<  solve_time << endl;
+    _t_solve_cum += solve_time;
+    cerr << "Cumulative [decompose and solve] = " << _t_solve_cum << endl;
+  }
+
+  if (! solvedPoses)
+    return false;
+
+  // _x contains the solution for the poses, now applying it to the landmarks to get the new part of the
+  // solution;
+  double* xp = _x;
+  double* cp = _coefficients;
+
+  double* xl=_x+_sizePoses;
+  double* cl=_coefficients + _sizePoses;
+  double* bl=_b+_sizePoses;
+
+  // cp = -xp
+  for (int i=0; i<_sizePoses; ++i)
+    cp[i]=-xp[i];
+
+  // cl = bl
+  memcpy(cl,bl,_sizeLandmarks*sizeof(double));
+
+  // cl = bl - Bt * xp
+  //Bt->multiply(cl, cp);
+  _HplCCS->rightMultiply(cl, cp);
+
+  // xl = Dinv * cl
+  memset(xl,0, _sizeLandmarks*sizeof(double));
+  _DInvSchur->multiply(xl,cl);
+  //_DInvSchur->rightMultiply(xl,cl);
+  if (_verbose) {
+    double landmark_delta_time = get_monotonic_time()-t;
+    cerr << "Solve [landmark delta] = " <<  landmark_delta_time << endl;
+    _t_landmark_delta_cum += landmark_delta_time;
+    cerr << "Cumulative [landmark delta] = " << _t_landmark_delta_cum << endl;
+  }
+
+  return true;
+}
+
+template <typename Traits>
+void BlockSolver<Traits>::updateSchur()
+{
   // _Hschur = _Hpp, but keeping the pattern of _Hschur
   _Hschur->clear();
   _Hpp->add(_Hschur);
@@ -429,62 +514,8 @@ bool BlockSolver<Traits>::solve(){
         (*Hi1i2).noalias() -= BDinv*Bj->transpose();
       }
     }
-  }
-  //cerr << "Solve [marginalize] = " <<  get_monotonic_time()-t << endl;
-
-  // _bschur = _b for calling solver, and not touching _b
-  memcpy(_bschur, _b, _sizePoses * sizeof(double));
-  for (int i=0; i<_sizePoses; ++i){
-    _bschur[i]-=_coefficients[i];
-  }
-
-  G2OBatchStatistics* globalStats = G2OBatchStatistics::globalStats();
-  if (globalStats){
-    globalStats->timeSchurComplement = get_monotonic_time() - t;
-  }
-
-  t=get_monotonic_time();
-  bool solvedPoses = _linearSolver->solve(*_Hschur, _x, _bschur);
-  if (globalStats) {
-    globalStats->timeLinearSolver = get_monotonic_time() - t;
-    globalStats->hessianPoseDimension = _Hpp->cols();
-    globalStats->hessianLandmarkDimension = _Hll->cols();
-    globalStats->hessianDimension = globalStats->hessianPoseDimension + globalStats->hessianLandmarkDimension;
-  }
-  //cerr << "Solve [decompose and solve] = " <<  get_monotonic_time()-t << endl;
-
-  if (! solvedPoses)
-    return false;
-
-  // _x contains the solution for the poses, now applying it to the landmarks to get the new part of the
-  // solution;
-  double* xp = _x;
-  double* cp = _coefficients;
-
-  double* xl=_x+_sizePoses;
-  double* cl=_coefficients + _sizePoses;
-  double* bl=_b+_sizePoses;
-
-  // cp = -xp
-  for (int i=0; i<_sizePoses; ++i)
-    cp[i]=-xp[i];
-
-  // cl = bl
-  memcpy(cl,bl,_sizeLandmarks*sizeof(double));
-
-  // cl = bl - Bt * xp
-  //Bt->multiply(cl, cp);
-  _HplCCS->rightMultiply(cl, cp);
-
-  // xl = Dinv * cl
-  memset(xl,0, _sizeLandmarks*sizeof(double));
-  _DInvSchur->multiply(xl,cl);
-  //_DInvSchur->rightMultiply(xl,cl);
-  //cerr << "Solve [landmark delta] = " <<  get_monotonic_time()-t << endl;
-
-  return true;
+  }  
 }
-
 
 template <typename Traits>
 bool BlockSolver<Traits>::computeMarginals(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices)
@@ -629,6 +660,156 @@ template <typename Traits>
 bool BlockSolver<Traits>::saveHessian(const std::string& fileName) const
 {
   return _Hpp->writeOctave(fileName.c_str(), true);
+}
+
+template <typename Traits>
+bool BlockSolver<Traits>::saveHessiansToFile(const std::string& fileNameStart) const
+{
+
+  // DEBUG(alexmillane)
+  std::cout << "Saving hessians to file" << std::endl;
+  std::cout << "Filename: " << fileNameStart << std::endl;
+
+  // Filenames
+  std::string fileName_Hpp(fileNameStart + "_Hpp");
+  std::string fileName_Hll(fileNameStart + "_Hll");
+  std::string fileName_Hpl(fileNameStart + "_Hpl");
+  std::string fileName_Hschur(fileNameStart + "_Hschur");
+
+  // Writing
+  bool ok1 = true;
+  bool ok2 = true;
+  bool ok3 = true;
+  bool ok4 = true;
+  if(_Hpp)
+    ok1 = _Hpp->writeMatlab(fileName_Hpp.c_str(), true);
+  if (_Hll) 
+    ok2 = _Hll->writeMatlab(fileName_Hll.c_str(), true);
+  if (_Hll) 
+    ok3 = _Hpl->writeMatlab(fileName_Hpl.c_str(), false);
+  if (_Hll) 
+    ok4 = _Hschur->writeMatlab(fileName_Hschur.c_str(), true);
+
+  // Return
+  return ok1 & ok2 & ok3 & ok4;
+}
+
+template <typename Traits>
+bool BlockSolver<Traits>::computePoseCovariance(Eigen::MatrixXd& poseCovariance)
+{
+  // If not computing by schur's compliment this function will not work.
+  if (!_doSchur)
+    return false;
+  // Timing
+  double t=get_monotonic_time();
+  // Restoring the diagonal in case Levenberg has fucked with it
+  restoreDiagonal();
+  // Recomputing the schur compliment with the original diagonal
+  updateSchur();
+  // Timing
+  cerr << "Covariance [schur] = " <<  get_monotonic_time()-t << endl;
+  // Retrieving the inverse of the schur compliment matrix
+  poseCovariance.resize(_Hschur->rows(), _Hschur->cols());
+  bool success = _linearSolver->solveInverse(*_Hschur, &poseCovariance);
+  // Timing
+  cerr << "Covariance [whole] = " <<  get_monotonic_time()-t << endl;
+  // Success
+  return success;
+}
+
+template <typename Traits>
+bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing)
+{
+  // If not computing by schur's compliment this function will not work.
+  if (!_doSchur)
+    return false;
+
+  // Timing
+  std::cout << "Getting the schur compliment" << std::endl;
+  //double t=get_monotonic_time();
+  // Restoring the diagonal in case Levenberg has fucked with it
+  restoreDiagonal();
+  // Recomputing the schur compliment with the original diagonal
+  updateSchur();
+  // Timing
+  //cerr << "Partial Covariance [schur] = " <<  get_monotonic_time()-t << endl;
+
+  /*----------------------------------------------
+   * USING THE CHOLMOD SOLVER ORDERING
+   *----------------------------------------------*/
+/*  std::cout << "Getting the sparse inverse with CHOLMOD." << std::endl;
+  double t=get_monotonic_time();
+  bool success;
+  if (!useForcing) {
+    return _linearSolver->solvePattern(spinv, blockIndices, *_Hschur);
+  } else {
+    return _linearSolver->solvePatternWithForcing(spinv, blockIndices, *_Hschur);
+  }
+  cerr << "Partial Covariance [extract factor] = " <<  get_monotonic_time()-t << endl;
+*/
+  /*----------------------------------------------
+   * USING THE EIGEN SOLVER
+   *----------------------------------------------*/
+  // Getting the cholesky factor
+  // TODO(alexmillane): Returning a pure sparse matrix introduces a dependency on Eigen Sparse Matrix
+  //                    up the entire chain. Would be good to move to block based reordering and return
+  //                    a factor which is a sparse block matrix.
+  // TODO(alexmillane): The solution to the above problem is simply to move this code inside the eigen solver.
+  std::cout << "Getting the cholesky factor" << std::endl;
+  Eigen::SparseMatrix<double, Eigen::ColMajor> cholesky_factor;
+  Eigen::PermutationMatrix<Eigen::Dynamic> P;
+  _linearSolver->getCholeskyFactor(*_Hschur, &cholesky_factor, &P);
+
+  // Getting the CCS representation of the cholesky factor
+  std::cout << "Compressing the cholesky factor" << std::endl;
+  cholesky_factor.makeCompressed();
+  int n = cholesky_factor.rows();
+  int* Lp = cholesky_factor.outerIndexPtr();
+  int* Li = cholesky_factor.innerIndexPtr();
+  double* Lx = cholesky_factor.valuePtr();
+  int* permInv = P.indices().data();
+
+  // Timing
+  double t=get_monotonic_time();
+  // Creating the marginal cholesky object
+  std::cout << "Setting up the cholesky covariance solver" << std::endl;
+  MarginalCovarianceCholesky marginal_covariance_cholesky;
+  marginal_covariance_cholesky.setCholeskyFactor(n, Lp, Li, Lx, permInv);
+
+  // Recovering matrix elements
+  //SparseBlockMatrix<MatrixXD> spinv;
+  marginal_covariance_cholesky.computeCovariance(
+      spinv, _Hschur->rowBlockIndices(), blockIndices);
+  cerr << "Partial Covariance [extract factor] = " <<  get_monotonic_time()-t << endl;
+
+  // Getting the computed elements of the cholesky factor
+  Eigen::MatrixXd computedIndicator;
+  marginal_covariance_cholesky.getComputedIndices(computedIndicator);
+
+/*  // Printing the result
+  std::cout << "spinv: " << std::endl << spinv << std::endl;
+
+  // Saving the cholesky factor
+  std::cout << "Saving the cholesky factor" << std::endl;
+  const std::string cholesky_filename =
+      "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+      "covariance/cholesky_factor";
+  io::writeMatlab(cholesky_filename, cholesky_factor);
+
+  // Saving the permutation matrix
+  std::cout << "Saving the permutation matrix" << std::endl;
+  const std::string permutation_filename =
+      "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+      "covariance/permutation_matrix";
+  io::writeMatlab(permutation_filename.c_str(),   P.toDenseMatrix());
+
+  // Saving the computed indicator
+  std::cout << "Saving the computed indicator" << std::endl;
+  const std::string indicator_filename =
+      "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+      "covariance/computed_indicator";
+  io::writeMatlab(indicator_filename.c_str(), computedIndicator);*/
+
 }
 
 } // end namespace

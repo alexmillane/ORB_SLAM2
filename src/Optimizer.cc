@@ -28,42 +28,69 @@
 #include "g2o/solvers/linear_solver_dense.h"
 #include "g2o/types/types_seven_dof_expmap.h"
 
+// New solver
+#include "g2o/solvers/cholmod/linear_solver_cholmod.h"
+
 #include<Eigen/StdVector>
 
 #include "orb_slam_2/Converter.h"
 
-#include<mutex>
+#include <mutex>
 
 namespace ORB_SLAM2
 {
 
+std::shared_ptr<g2o::SparseOptimizer> Optimizer::mpGBAOptimizer;
 
-void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
+void Optimizer::GlobalBundleAdjustemnt(Map* pMap, int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust, Eigen::MatrixXd* pPoseCovariance, std::map<unsigned long, int>* pKFidToHessianCol)
 {
     vector<KeyFrame*> vpKFs = pMap->GetAllKeyFrames();
     vector<MapPoint*> vpMP = pMap->GetAllMapPoints();
-    BundleAdjustment(vpKFs,vpMP,nIterations,pbStopFlag, nLoopKF, bRobust);
+    BundleAdjustment(vpKFs,vpMP,nIterations,pbStopFlag, nLoopKF, bRobust, pPoseCovariance, pKFidToHessianCol);
 }
 
 
 void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<MapPoint *> &vpMP,
-                                 int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust)
+                                 int nIterations, bool* pbStopFlag, const unsigned long nLoopKF, const bool bRobust, Eigen::MatrixXd* pPoseCovariance, std::map<unsigned long, int>* pKFidToHessianCol)
 {
     vector<bool> vbNotIncludedMP;
     vbNotIncludedMP.resize(vpMP.size());
 
-    g2o::SparseOptimizer optimizer;
+    g2o::SparseOptimizer* optimizer = new g2o::SparseOptimizer;
     g2o::BlockSolver_6_3::LinearSolverType * linearSolver;
 
+    // CHOLMOD
+    //g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>* linear_solver_cholmod = new g2o::LinearSolverCholmod<g2o::BlockSolver_6_3::PoseMatrixType>();
+    //linear_solver_cholmod->setBlockOrdering(true);
+    //linearSolver = static_cast<g2o::LinearSolver<g2o::BlockSolver_6_3::PoseMatrixType>*>(linear_solver_cholmod);
+    
+    // EIGEN
     linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolver_6_3::PoseMatrixType>();
 
     g2o::BlockSolver_6_3 * solver_ptr = new g2o::BlockSolver_6_3(linearSolver);
 
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
-    optimizer.setAlgorithm(solver);
+    optimizer->setAlgorithm(solver);
+
+    // Optimizer iteration information
+    constexpr bool optimizerVerbose = true;
+    optimizer->setVerbose(optimizerVerbose);
+    // Prints out linear solver timings per iteration (marinalize, decompose, landmark delta)
+    constexpr bool solverVerbose = true;
+    solver_ptr->setVerbose(solverVerbose);
+
+    // Some statistics
+    constexpr bool topLevelVerbose = true;
+    if (topLevelVerbose) {
+      std::cout << "Starting new optimization" << std::endl;
+      std::cout << "--------------------------------------------------" << std::endl;
+      std::cout << "vpKFs.size(): " << vpKFs.size() << std::endl;
+      std::cout << "vpMP.size(): " << vpMP.size() << std::endl;
+    }
+
 
     if(pbStopFlag)
-        optimizer.setForceStopFlag(pbStopFlag);
+        optimizer->setForceStopFlag(pbStopFlag);
 
     long unsigned int maxKFid = 0;
 
@@ -77,7 +104,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         vSE3->setEstimate(Converter::toSE3Quat(pKF->GetPose()));
         vSE3->setId(pKF->mnId);
         vSE3->setFixed(pKF->mnId==0);
-        optimizer.addVertex(vSE3);
+        optimizer->addVertex(vSE3);
         if(pKF->mnId>maxKFid)
             maxKFid=pKF->mnId;
     }
@@ -96,7 +123,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         const int id = pMP->mnId+maxKFid+1;
         vPoint->setId(id);
         vPoint->setMarginalized(true);
-        optimizer.addVertex(vPoint);
+        optimizer->addVertex(vPoint);
 
        const map<KeyFrame*,size_t> observations = pMP->GetObservations();
 
@@ -120,8 +147,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
                 g2o::EdgeSE3ProjectXYZ* e = new g2o::EdgeSE3ProjectXYZ();
 
-                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
-                e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId)));
+                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer->vertex(id)));
+                e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer->vertex(pKF->mnId)));
                 e->setMeasurement(obs);
                 const float &invSigma2 = pKF->mvInvLevelSigma2[kpUn.octave];
                 e->setInformation(Eigen::Matrix2d::Identity()*invSigma2);
@@ -138,7 +165,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
                 e->cx = pKF->cx;
                 e->cy = pKF->cy;
 
-                optimizer.addEdge(e);
+                optimizer->addEdge(e);
             }
             else
             {
@@ -148,8 +175,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
                 g2o::EdgeStereoSE3ProjectXYZ* e = new g2o::EdgeStereoSE3ProjectXYZ();
 
-                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
-                e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(pKF->mnId)));
+                e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer->vertex(id)));
+                e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer->vertex(pKF->mnId)));
                 e->setMeasurement(obs);
                 const float &invSigma2 = pKF->mvInvLevelSigma2[kpUn.octave];
                 Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
@@ -168,13 +195,13 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
                 e->cy = pKF->cy;
                 e->bf = pKF->mbf;
 
-                optimizer.addEdge(e);
+                optimizer->addEdge(e);
             }
         }
 
         if(nEdges==0)
         {
-            optimizer.removeVertex(vPoint);
+            optimizer->removeVertex(vPoint);
             vbNotIncludedMP[i]=true;
         }
         else
@@ -184,10 +211,8 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
     }
 
     // Optimize!
-    optimizer.initializeOptimization();
-    optimizer.optimize(nIterations);
-
-    // Recover optimized data
+    optimizer->initializeOptimization();
+    optimizer->optimize(nIterations);
 
     //Keyframes
     for(size_t i=0; i<vpKFs.size(); i++)
@@ -195,7 +220,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         KeyFrame* pKF = vpKFs[i];
         if(pKF->isBad())
             continue;
-        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer.vertex(pKF->mnId));
+        g2o::VertexSE3Expmap* vSE3 = static_cast<g2o::VertexSE3Expmap*>(optimizer->vertex(pKF->mnId));
         g2o::SE3Quat SE3quat = vSE3->estimate();
         if(nLoopKF==0)
         {
@@ -219,7 +244,7 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
 
         if(pMP->isBad())
             continue;
-        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer.vertex(pMP->mnId+maxKFid+1));
+        g2o::VertexSBAPointXYZ* vPoint = static_cast<g2o::VertexSBAPointXYZ*>(optimizer->vertex(pMP->mnId+maxKFid+1));
 
         if(nLoopKF==0)
         {
@@ -233,6 +258,50 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
             pMP->mnBAGlobalForKF = nLoopKF;
         }
     }
+
+/*    // Saving the hessians for file
+    constexpr bool saveHessiansToFile = true;
+    if (saveHessiansToFile) {
+      const static std::string hessianFilePathStart =
+          "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+          "covariance/hessian";
+      optimizer->saveHessiansToFile(hessianFilePathStart);
+    }
+
+    // Returning the covariances and the associated KF to index map.
+    if ((pPoseCovariance != nullptr) && (pKFidToHessianCol != nullptr)) {
+        // Getting the pose covariance
+        optimizer->computePoseCovariance(*pPoseCovariance);
+        // Creating the keyframe ID to hessian index map
+        // NOTE(alexmillane): Size of the hessian block not included here for simplicity
+        //std::map<unsigned long, std::pair<int,int>> mKFidToHessianColAndSize;
+        //std::map<unsigned long, int> mKFidToHessianCol;
+        for(size_t i=0; i<vpKFs.size(); i++)
+        {
+            KeyFrame* pKF = vpKFs[i];
+            if(pKF->isBad())
+                continue;
+            // Adding the keyframe position and size linked to the KF ID.
+            g2o::OptimizableGraph::Vertex* vertex = optimizer->vertex(pKF->mnId);
+            //mKFidToHessianColAndSize[pKF->mnId] = std::pair<int,int>(vertex->colInHessian(), vertex->dimension());
+            (*pKFidToHessianCol)[pKF->mnId] = vertex->colInHessian();
+        }
+
+        // Saving the covariance matrix to file if requested
+        constexpr bool saveCovarianceToFile = true;
+        if (saveCovarianceToFile) {
+            //DEBUG
+            std::cout << "Saving the pose covariance to file" << std::endl;
+            // Saving
+            const static std::string covarianceFilePath =
+              "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
+              "covariance/pose_covariance";
+            g2o::io::writeMatlab(covarianceFilePath.c_str(), *pPoseCovariance);
+        }
+    }
+*/
+    // Saving the optimizer for later recovery
+    mpGBAOptimizer.reset(optimizer);
 
 }
 
@@ -702,7 +771,6 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool* pbStopFlag, Map* pMap
     }
 
     // Optimize again without the outliers
-
     optimizer.initializeOptimization(0);
     optimizer.optimize(10);
 
@@ -1240,5 +1308,8 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
     return nIn;
 }
 
+std::shared_ptr<g2o::SparseOptimizer> Optimizer::getLastGBAOptimizer() {
+    return mpGBAOptimizer;
+}
 
 } //namespace ORB_SLAM

@@ -6,6 +6,8 @@ add_definitions(-std=c++11)
 find_package(catkin_simple REQUIRED)
 catkin_simple()
 
+file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
+
 # Compiling DBoW2
 include(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/DBoW2/CMakeLists.txt)
 
@@ -16,4 +18,4 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/Thirdparty/g2o/CMakeLists.txt)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeLists.txt)
 
 cs_install()
-cs_export(INCLUDE_DIRS "${DBOW2_ROOT_DIR}" "${g2o_ROOT_DIR}")
+cs_export(INCLUDE_DIRS ${CATKIN_DEVEL_PREFIX}/include include "${DBOW2_ROOT_DIR}" "${g2o_ROOT_DIR}")

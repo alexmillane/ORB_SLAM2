@@ -27,6 +27,10 @@
 #ifndef G2O_BLOCK_SOLVER_H
 #define G2O_BLOCK_SOLVER_H
 #include <Eigen/Core>
+
+// NOTE(alexmillane): Had to introduce this to be able to return the cholesky factor
+#include <Eigen/Sparse>
+
 #include "solver.h"
 #include "linear_solver.h"
 #include "sparse_block_matrix.h"
@@ -132,6 +136,10 @@ namespace g2o {
       virtual bool schur() { return _doSchur;}
       virtual void setSchur(bool s) { _doSchur = s;}
 
+      // DEBUG(alexmillane)
+      // Seperate computation of the schur compliment into a seperate function
+      virtual void updateSchur();
+
       LinearSolver<PoseMatrixType>* linearSolver() const { return _linearSolver;}
 
       virtual void setWriteDebug(bool writeDebug);
@@ -140,6 +148,11 @@ namespace g2o {
       virtual bool saveHessian(const std::string& fileName) const;
 
       virtual void multiplyHessian(double* dest, const double* src) const { _Hpp->multiplySymmetricUpperTriangle(dest, src);}
+
+      // DEBUG(alexmillane)
+      virtual bool saveHessiansToFile(const std::string& fileNameStart) const;
+      virtual bool computePoseCovariance(Eigen::MatrixXd& poseCovariance);
+      virtual bool computePartialPoseCovariance(SparseBlockMatrix<MatrixXd>& spinv, const std::vector<std::pair<int, int> >& blockIndices, bool useForcing = false);
 
     protected:
       void resize(int* blockPoseIndices, int numPoseBlocks, 
@@ -173,8 +186,16 @@ namespace g2o {
 
       int _numPoses, _numLandmarks;
       int _sizePoses, _sizeLandmarks;
+
+      // DEBUG(alexmillane)
+      double _t_marginalize_cum;
+      double _t_solve_cum;
+      double _t_landmark_delta_cum;
+
   };
 
+  template<int p, int l>
+  using BlockSolverPL = BlockSolver< BlockSolverTraits<p, l> >;
 
   //variable size solver
   typedef BlockSolver< BlockSolverTraits<Eigen::Dynamic, Eigen::Dynamic> > BlockSolverX;

@@ -28,6 +28,7 @@
 #include "orb_slam_2/Frame.h"
 
 #include "g2o/types/types_seven_dof_expmap.h"
+#include "g2o/core/sparse_optimizer.h"
 
 namespace ORB_SLAM2
 {
@@ -39,9 +40,12 @@ class Optimizer
 public:
     void static BundleAdjustment(const std::vector<KeyFrame*> &vpKF, const std::vector<MapPoint*> &vpMP,
                                  int nIterations = 5, bool *pbStopFlag=NULL, const unsigned long nLoopKF=0,
-                                 const bool bRobust = true);
+                                 const bool bRobust = true, Eigen::MatrixXd* pPoseCovariance = nullptr, 
+                                 std::map<unsigned long, int>* pKFidToHessianCol = nullptr);
     void static GlobalBundleAdjustemnt(Map* pMap, int nIterations=5, bool *pbStopFlag=NULL,
-                                       const unsigned long nLoopKF=0, const bool bRobust = true);
+                                       const unsigned long nLoopKF=0, const bool bRobust = true,
+                                       Eigen::MatrixXd* pPoseCovariance = nullptr,
+                                       std::map<unsigned long, int>* pKFidToHessianCol = nullptr);
     void static LocalBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap);
     int static PoseOptimization(Frame* pFrame);
 
@@ -55,6 +59,13 @@ public:
     // if bFixScale is true, optimize SE3 (stereo,rgbd), Sim3 otherwise (mono)
     static int OptimizeSim3(KeyFrame* pKF1, KeyFrame* pKF2, std::vector<MapPoint *> &vpMatches1,
                             g2o::Sim3 &g2oS12, const float th2, const bool bFixScale);
+
+    // Returns the optmizer used in the last bundle adjustment
+    static std::shared_ptr<g2o::SparseOptimizer> getLastGBAOptimizer();
+
+private:
+    // The optimizer used in the global bundle adjustment (saved for later recovery).
+    static std::shared_ptr<g2o::SparseOptimizer> mpGBAOptimizer;
 };
 
 } //namespace ORB_SLAM
