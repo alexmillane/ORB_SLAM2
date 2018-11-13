@@ -724,32 +724,43 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   if (!_doSchur)
     return false;
 
-  // Timing
-  std::cout << "Getting the schur compliment" << std::endl;
-  //double t=get_monotonic_time();
   // Restoring the diagonal in case Levenberg has fucked with it
-  restoreDiagonal();
+  //std::cout << "Getting the schur compliment" << std::endl;
+  //double t=get_monotonic_time();
+  //restoreDiagonal();
   // Recomputing the schur compliment with the original diagonal
-  updateSchur();
+  //updateSchur();
   // Timing
   //cerr << "Partial Covariance [schur] = " <<  get_monotonic_time()-t << endl;
+
+  // Stabalizing the inversion with a small lambda
+  constexpr double lambda_stabalizing = 0.0001;
+  restoreDiagonal();
+  setLambda(lambda_stabalizing, true);
+  updateSchur();
 
   /*----------------------------------------------
    * USING THE CHOLMOD SOLVER ORDERING
    *----------------------------------------------*/
-/*  std::cout << "Getting the sparse inverse with CHOLMOD." << std::endl;
+  //std::cout << "Getting the sparse inverse with CHOLMOD." << std::endl;
   double t=get_monotonic_time();
   bool success;
   if (!useForcing) {
     return _linearSolver->solvePattern(spinv, blockIndices, *_Hschur);
   } else {
+/*    // DEBUG SAVING THE HESSIANS TO DISK
+    std::cout << "SAVING HESSIANS TO FILE RIGHT BEFORE COVARIANCE EXTRACTION" << std::endl;
+    std::string fileNameStart = "/home/millanea/trunk/manifold_mapping_analysis/data/carla/covariance/hessian";
+    saveHessiansToFile(fileNameStart);
+*/    
     return _linearSolver->solvePatternWithForcing(spinv, blockIndices, *_Hschur);
   }
   cerr << "Partial Covariance [extract factor] = " <<  get_monotonic_time()-t << endl;
-*/
+
   /*----------------------------------------------
    * USING THE EIGEN SOLVER
    *----------------------------------------------*/
+  /*
   // Getting the cholesky factor
   // TODO(alexmillane): Returning a pure sparse matrix introduces a dependency on Eigen Sparse Matrix
   //                    up the entire chain. Would be good to move to block based reordering and return
@@ -785,7 +796,7 @@ bool BlockSolver<Traits>::computePartialPoseCovariance(SparseBlockMatrix<MatrixX
   // Getting the computed elements of the cholesky factor
   Eigen::MatrixXd computedIndicator;
   marginal_covariance_cholesky.getComputedIndices(computedIndicator);
-
+  */
 /*  // Printing the result
   std::cout << "spinv: " << std::endl << spinv << std::endl;
 

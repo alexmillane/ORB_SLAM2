@@ -29,7 +29,7 @@
 #include <Eigen/Core>
 
 // NOTE(alexmillane): Had to introduce this to be able to return the cholesky factor
-#include <Eigen/Sparse>
+//#include <Eigen/Sparse>
 
 #include "solver.h"
 #include "linear_solver.h"

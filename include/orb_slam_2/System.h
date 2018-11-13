@@ -76,7 +76,8 @@ class System {
   // Input depthmap: Float (CV_32F).
   // Returns the camera pose (empty if tracking fails).
   cv::Mat TrackRGBD(const cv::Mat& im, const cv::Mat& depthmap,
-                    const double& timestamp, bool* keyframe_flag);
+                    const double& timestamp, bool* keyframe_flag,
+                      bool* pgo_flag, bool* gba_flag);
 
   // Proccess the given monocular frame
   // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to

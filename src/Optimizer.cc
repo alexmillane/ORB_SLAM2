@@ -259,15 +259,16 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
         }
     }
 
-/*    // Saving the hessians for file
-    constexpr bool saveHessiansToFile = true;
+    // Saving the hessians for file
+/*    constexpr bool saveHessiansToFile = true;
     if (saveHessiansToFile) {
-      const static std::string hessianFilePathStart =
-          "/home/millanea/trunk/manifold_mapping_analysis/data/orb_slam/"
-          "covariance/hessian";
-      optimizer->saveHessiansToFile(hessianFilePathStart);
+      std::cout << "SAVING HESSIANS TO FILE RIGHT AFTER BA" << std::endl;
+      std::string fileNameStart = "/home/millanea/trunk/manifold_mapping_analysis/data/carla/covariance/hessian_before";
+      optimizer->saveHessiansToFile(fileNameStart);
     }
+*/
 
+/*
     // Returning the covariances and the associated KF to index map.
     if ((pPoseCovariance != nullptr) && (pKFidToHessianCol != nullptr)) {
         // Getting the pose covariance
@@ -298,6 +299,16 @@ void Optimizer::BundleAdjustment(const vector<KeyFrame *> &vpKFs, const vector<M
               "covariance/pose_covariance";
             g2o::io::writeMatlab(covarianceFilePath.c_str(), *pPoseCovariance);
         }
+    }
+*/
+
+/*    // DEBUG THE KEYFRAMES
+    // Look at the number of keyframes per map point.
+    // Set KeyFrame vertices
+    for(size_t i=0; i<vpKFs.size(); i++)
+    {
+        KeyFrame* pKF = vpKFs[i];
+        std::cout << "keyframe " << i << "has " << pKF->GetMapPoints().size() << " keypoints" << std::endl;
     }
 */
     // Saving the optimizer for later recovery

@@ -56,6 +56,10 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     SetPose(F.mTcw);    
 }
 
+KeyFrame::~KeyFrame() {
+    std::cout << "keyframe " << mnId << " is being deleted." << std::endl;
+}
+
 void KeyFrame::ComputeBoW()
 {
     if(mBowVec.empty() || mFeatVec.empty())
